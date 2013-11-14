@@ -1,0 +1,17 @@
+language: python
+python:
+  - "2.7"
+  - "3.3"
+  - "pypy"
+install:
+  - pip install nose coverage
+  - pip install -r requirements.txt
+  - python setup.py develop
+script: 
+  - nosetests --with-coverage --with-doctest --doctest-options=+ELLIPSIS
+after_success:
+  - pip install coveralls
+  - coveralls
+branches:
+  only:
+    - master
