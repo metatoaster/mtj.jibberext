@@ -17,19 +17,19 @@ class FakeBot(object):
 
 bot = FakeBot({
     'room@chat.example.com': {
-        'userA': {},
-        'userB': {},
-        'userC': {},
-        'userD': {},
-        'userE': {},
+        'userA': {'jid': 'userA@example.com'},
+        'userB': {'jid': 'userB@example.com'},
+        'userC': {'jid': 'userC@example.com/fail'},
+        'userD': {'jid': 'userD@example.com/fail'},
+        'userE': {'jid': 'userE@example.com'},
     },
     'house@chat.example.com': {
-        'userA': {},
-        'userC': {},
-        'userE': {},
+        'userA': {'jid': 'userA@example.com'},
+        'userC': {'jid': 'userC@example.com/fail'},
+        'userE': {'jid': 'userE@example.com'},
     },
     'kitchen@chat.example.com': {
-        'tester 1': {},
+        'tester 1': {'jid': 'tester1@example.com/derp'},
     },
 })
 
@@ -119,3 +119,63 @@ class TestPinger(TestCase):
         msg = {'mucroom': 'kitchen@chat.example.com'}
         result = pinger.ping_victims(msg, None, bot)
         self.assertEqual(result, 'tester 1: hi')
+
+    def test_ping_victim_jids_only(self):
+        pinger = Pinger(db_src='sqlite://',
+            ping_msg='hi', no_victim_msg='I see no victims.')
+        msg = {'mucroom': 'room@chat.example.com'}
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'I see no victims.')
+
+        pinger.add_victim_jid('tester1@example.com')
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'I see no victims.')
+
+        pinger.add_victim_jid('userA@example.com')
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'userA: hi')
+
+        msg = {'mucroom': 'kitchen@chat.example.com'}
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'tester 1: hi')
+
+    def test_ping_victim_jids_nicknames_mix(self):
+        pinger = Pinger(db_src='sqlite://',
+            ping_msg='hi', no_victim_msg='I see no victims.')
+        msg = {'mucroom': 'room@chat.example.com'}
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'I see no victims.')
+
+        pinger.add_victim_jid('tester1@example.com')
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'I see no victims.')
+
+        pinger.add_victim_jid('userA@example.com')
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'userA: hi')
+
+        pinger.add_victim_nickname('userA')
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'userA: hi')
+
+        msg = {'mucroom': 'kitchen@chat.example.com'}
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'tester 1: hi')
+
+        pinger.add_victim_nickname('tester 1')
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'tester 1: hi')
+
+        msg = {'mucroom': 'room@chat.example.com'}
+
+        pinger.add_victim_jid('userB@example.com')
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'userA: userB: hi')
+
+        pinger.add_victim_nickname('userC@example.com')
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'userA: userB: hi')
+
+        pinger.add_victim_jid('userC@example.com')
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'userA: userB: userC: hi')

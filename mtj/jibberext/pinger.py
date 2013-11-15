@@ -84,10 +84,13 @@ class Pinger(Command):
     def _get_msg(self, obj, msg, match, bot):
         return callable(obj) and obj(msg=msg, match=match, bot=bot) or obj
 
-    def _get_roster_nicknames(self, msg, match, bot):
+    def _get_roster(self, msg, match, bot):
         source_room = msg.get('mucroom', {})
         room_roster = bot.muc.rooms.get(source_room, {})
-        return room_roster.keys()
+        return room_roster
+
+    def _get_roster_nicknames(self, msg, match, bot):
+        return self._get_roster(msg, match, bot).keys()
 
     def ping_all(self, msg, match, bot, nicknames=None, **kw):
         if not nicknames:
@@ -96,7 +99,8 @@ class Pinger(Command):
         msg = self._get_msg(self.ping_msg, msg, match, bot)
         return nickstr + self.nick_joiner + msg
 
-    # XXX these really could be hooked to a simple list overrides of sort...
+    # XXX these really could be hooked to a simple list accessor that
+    # has magic methods that hooks into the database.
 
     def _build_add_del_get_table(table_key, value_key):
         def add_(self, value):
@@ -139,10 +143,17 @@ class Pinger(Command):
     add_admin_jid, del_admin_jid, get_admin_jids = \
         _build_add_del_get_table('admin_jids', 'jid')
 
+    def _get_nicknames_by_jid(self, msg, match, bot):
+        jids = set(self.get_victim_jids())
+        room_roster = self._get_roster(msg, match, bot)
+        return [nickname for nickname, details in room_roster.items()
+            if str(details.get('jid', '')).split('/')[0] in jids]
+
     def ping_victims(self, msg, match, bot, **kw):
         victim_nicknames = set(self.get_victim_nicknames())
+        jid_nicknames = set(self._get_nicknames_by_jid(msg, match, bot))
         roster_nicknames = set(self._get_roster_nicknames(msg, match, bot))
-        nicknames = victim_nicknames & roster_nicknames
+        nicknames = roster_nicknames & (victim_nicknames | jid_nicknames)
         if not nicknames:
             return self._get_msg(self.no_victim_msg, msg, match, bot)
         return self.ping_all(msg, match, bot, nicknames=nicknames)
