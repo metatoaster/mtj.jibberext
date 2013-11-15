@@ -11,7 +11,7 @@ from sqlalchemy.types import VARCHAR
 
 from mtj.jibber.core import Command
 
-logger = logging.getLogger('mtj.jibberext')
+logger = logging.getLogger(__name__)
 
 
 class Pinger(Command):
@@ -66,8 +66,8 @@ class Pinger(Command):
             Column(u'jid', VARCHAR(length=255),
                 primary_key=True, nullable=False),
         )
-        self.tables['victim_admins'] = Table(u'victim_admins', metadata,
-            Column(u'admin_jid', VARCHAR(length=255),
+        self.tables['admin_jids'] = Table(u'admin_jids', metadata,
+            Column(u'jid', VARCHAR(length=255),
                 primary_key=True, nullable=False),
         )
 
@@ -135,6 +135,9 @@ class Pinger(Command):
 
     add_victim_jid, del_victim_jid, get_victim_jids = \
         _build_add_del_get_table('victim_jids', 'jid')
+
+    add_admin_jid, del_admin_jid, get_admin_jids = \
+        _build_add_del_get_table('admin_jids', 'jid')
 
     def ping_victims(self, msg, match, bot, **kw):
         victim_nicknames = set(self.get_victim_nicknames())
