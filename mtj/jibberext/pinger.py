@@ -21,14 +21,14 @@ class Pinger(Command):
     Use with utmost care.  If used with utmost uncare hilarity and lots
     of mad and tears will result.  This has been tested on test general.
 
-    Generally (or sadistically), this can be instantiated without a
-    database support.
+    Generally (or sadistically to the room(s) that this module will be
+    in), this can be instantiated without a database support.
 
     >>> pinger = Pinger()
 
-    To make this less problematic, use a database, and a filter so that
-    only willing victims will have their nicknames spammed into the
-    channel.
+    To make this less problematic (so mods don't start waving their
+    banhammers), use a database to enable a persistent white list of
+    victims.
 
     >>> pinger = Pinger('sqlite://')
     """
@@ -60,7 +60,7 @@ class Pinger(Command):
             Column(u'nickname', VARCHAR(length=255),
                 primary_key=True, nullable=False),
         )
-        self.victim_pingjids = Table(u'victim_jids', metadata,
+        self.victim_jids = Table(u'victim_jids', metadata,
             Column(u'jid', VARCHAR(length=255),
                 primary_key=True, nullable=False),
         )
@@ -95,6 +95,7 @@ class Pinger(Command):
         return nickstr + self.nick_joiner + msg
 
     # XXX these really could be hooked to a simple list overrides of sort...
+    # also, cripes, duplicate code...
 
     def add_victim_nickname(self, nickname):
         conn = self.get_connection()
@@ -118,6 +119,32 @@ class Pinger(Command):
         if conn is None:
             return []
         sql = select([self.victim_nicknames.c.nickname])
+        result = [i[0] for i in conn.execute(sql).fetchall()]
+        conn.close()
+        return result
+
+    def add_victim_jid(self, jid):
+        conn = self.get_connection()
+        if conn is None:
+            return
+        with conn.begin():
+            sql = self.victim_jids.insert().values(jid=jid)
+            conn.execute(sql)
+
+    def del_victim_jid(self, jid):
+        conn = self.get_connection()
+        if conn is None:
+            return
+        with conn.begin():
+            sql = self.victim_jids.delete().where(
+                self.victim_jids.c.jid == jid)
+            conn.execute(sql)
+
+    def get_victim_jids(self):
+        conn = self.get_connection()
+        if conn is None:
+            return []
+        sql = select([self.victim_jids.c.jid])
         result = [i[0] for i in conn.execute(sql).fetchall()]
         conn.close()
         return result

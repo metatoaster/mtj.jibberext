@@ -62,6 +62,25 @@ class TestPinger(TestCase):
         pinger.del_victim_nickname('tester 1')
         self.assertEqual(pinger.get_victim_nicknames(), [])
 
+    def test_victim_jids(self):
+        pinger = Pinger(db_src='sqlite://')
+        pinger.add_victim_jid('tester1@example.com')
+        self.assertEqual(sorted(pinger.get_victim_jids()),
+            ['tester1@example.com'])
+        pinger.add_victim_jid('tester2@example.com')
+        self.assertEqual(sorted(pinger.get_victim_jids()),
+            ['tester1@example.com', 'tester2@example.com'])
+        pinger.del_victim_jid('tester1@example.com')
+        self.assertEqual(sorted(pinger.get_victim_jids()),
+            ['tester2@example.com'])
+
+    def test_victim_jids_no_db(self):
+        pinger = Pinger()
+        pinger.add_victim_jid('tester1@example.com')
+        self.assertEqual(pinger.get_victim_jids(), [])
+        pinger.del_victim_jid('tester1@example.com')
+        self.assertEqual(pinger.get_victim_jids(), [])
+
     # pinging functions
 
     def test_pingall(self):
