@@ -2,8 +2,6 @@ from unittest import TestCase, skipIf
 
 from mtj.jibberext.pinger import Pinger
 
-import tests
-
 
 class Muc(object):
     def __init__(self, rooms):

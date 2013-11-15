@@ -5,8 +5,6 @@ from os.path import join, dirname
 from mtj.jibberext import fortune
 from mtj.jibberext import _fortune
 
-import tests
-
 
 def path(name):
     return join(dirname(__file__), name)
