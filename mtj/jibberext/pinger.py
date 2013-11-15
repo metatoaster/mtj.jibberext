@@ -39,6 +39,8 @@ class Pinger(Command):
             no_victim_msg=None,
             nick_joiner=': ',
         ):
+        self.tables = {}
+
         if db_src:
             self.engine = create_engine(db_src)
             self.initialize_db()
@@ -56,15 +58,15 @@ class Pinger(Command):
             return
 
         metadata = MetaData(bind=self.engine)
-        self.victim_nicknames = Table(u'victim_nicknames', metadata,
+        self.tables['victim_nicknames'] = Table(u'victim_nicknames', metadata,
             Column(u'nickname', VARCHAR(length=255),
                 primary_key=True, nullable=False),
         )
-        self.victim_jids = Table(u'victim_jids', metadata,
+        self.tables['victim_jids'] = Table(u'victim_jids', metadata,
             Column(u'jid', VARCHAR(length=255),
                 primary_key=True, nullable=False),
         )
-        self.victim_admins = Table(u'victim_admins', metadata,
+        self.tables['victim_admins'] = Table(u'victim_admins', metadata,
             Column(u'admin_jid', VARCHAR(length=255),
                 primary_key=True, nullable=False),
         )
@@ -95,59 +97,44 @@ class Pinger(Command):
         return nickstr + self.nick_joiner + msg
 
     # XXX these really could be hooked to a simple list overrides of sort...
-    # also, cripes, duplicate code...
 
-    def add_victim_nickname(self, nickname):
-        conn = self.get_connection()
-        if conn is None:
-            return
-        with conn.begin():
-            sql = self.victim_nicknames.insert().values(nickname=nickname)
-            conn.execute(sql)
+    def _build_add_del_get_table(table_key, value_key):
+        def add_(self, value):
+            table = self.tables.get(table_key)
+            conn = self.get_connection()
+            if conn is None:
+                return
+            with conn.begin():
+                sql = table.insert().values(**{value_key: value})
+                conn.execute(sql)
 
-    def del_victim_nickname(self, nickname):
-        conn = self.get_connection()
-        if conn is None:
-            return
-        with conn.begin():
-            sql = self.victim_nicknames.delete().where(
-                self.victim_nicknames.c.nickname == nickname)
-            conn.execute(sql)
+        def del_(self, value):
+            table = self.tables.get(table_key)
+            conn = self.get_connection()
+            if conn is None:
+                return
+            with conn.begin():
+                sql = table.delete().where(
+                    table.c.get(value_key) == value)
+                conn.execute(sql)
 
-    def get_victim_nicknames(self):
-        conn = self.get_connection()
-        if conn is None:
-            return []
-        sql = select([self.victim_nicknames.c.nickname])
-        result = [i[0] for i in conn.execute(sql).fetchall()]
-        conn.close()
-        return result
+        def get_(self):
+            table = self.tables.get(table_key)
+            conn = self.get_connection()
+            if conn is None:
+                return []
+            sql = select([table.c.get(value_key)])
+            result = [i[0] for i in conn.execute(sql).fetchall()]
+            conn.close()
+            return result
 
-    def add_victim_jid(self, jid):
-        conn = self.get_connection()
-        if conn is None:
-            return
-        with conn.begin():
-            sql = self.victim_jids.insert().values(jid=jid)
-            conn.execute(sql)
+        return add_, del_, get_
 
-    def del_victim_jid(self, jid):
-        conn = self.get_connection()
-        if conn is None:
-            return
-        with conn.begin():
-            sql = self.victim_jids.delete().where(
-                self.victim_jids.c.jid == jid)
-            conn.execute(sql)
+    add_victim_nickname, del_victim_nickname, get_victim_nicknames = \
+        _build_add_del_get_table('victim_nicknames', 'nickname')
 
-    def get_victim_jids(self):
-        conn = self.get_connection()
-        if conn is None:
-            return []
-        sql = select([self.victim_jids.c.jid])
-        result = [i[0] for i in conn.execute(sql).fetchall()]
-        conn.close()
-        return result
+    add_victim_jid, del_victim_jid, get_victim_jids = \
+        _build_add_del_get_table('victim_jids', 'jid')
 
     def ping_victims(self, msg, match, bot, **kw):
         victim_nicknames = set(self.get_victim_nicknames())
