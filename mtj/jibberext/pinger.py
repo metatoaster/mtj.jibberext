@@ -35,13 +35,15 @@ class Pinger(Command):
 
     def __init__(self,
             db_src=None,
-            ping_msg=None,
-            no_victim_msg=None,
             nick_joiner=': ',
             stanza_admin_conditions=(
                 ('affiliation', ['owner']),
                 ('role', ['moderator']),
             ),
+
+            msg_ping=None,
+            msg_no_victim=None,
+
             msg_subscribed='You are now subscribed to the Pinger.',
             msg_already_subscribed='You are already subscribed.',
             msg_unsubscribed='You are now unsubscribed to the Pinger.',
@@ -56,8 +58,8 @@ class Pinger(Command):
             logger.warning('No database defined for Pinger')
             self.engine = None
 
-        self.ping_msg = ping_msg
-        self.no_victim_msg = no_victim_msg
+        self.msg_ping = msg_ping
+        self.msg_no_victim = msg_no_victim
         self.nick_joiner = nick_joiner
         self.stanza_admin_conditions = stanza_admin_conditions
 
@@ -95,8 +97,26 @@ class Pinger(Command):
         except Exception as e:
             logger.error('Database connect error')
 
-    def _get_msg(self, obj, msg, match, bot):
-        return callable(obj) and obj(msg=msg, match=match, bot=bot) or obj
+    def _get_msg(self, obj, msg, match, bot, template=None):
+        if callable(obj):
+            called = obj(msg=msg, match=match, bot=bot)
+        else:
+            called = obj
+
+        if template is None or called is None:
+            return called
+
+        if not isinstance(called, dict):
+            return template % called % msg
+
+        result = {}
+        result.update(called)
+
+        try:
+            result['raw'] = template % result['raw'] % msg
+        except:
+            logger.error('could not apply result %r into template %r')
+        return result
 
     def _get_roster(self, msg, match, bot):
         source_room = msg.get('mucroom', {})
@@ -107,11 +127,15 @@ class Pinger(Command):
         return self._get_roster(msg, match, bot).keys()
 
     def ping_all(self, msg, match, bot, nicknames=None, **kw):
+        if not self.msg_ping:
+            return
+
         if not nicknames:
             nicknames = self._get_roster_nicknames(msg, match, bot)
         nickstr = self.nick_joiner.join(sorted(nicknames))
-        msg = self._get_msg(self.ping_msg, msg, match, bot)
-        return nickstr + self.nick_joiner + msg
+        result = self._get_msg(self.msg_ping, msg, match, bot,
+            template=(nickstr + self.nick_joiner + '%s'))
+        return result
 
     # XXX these really could be hooked to a simple list accessor that
     # has magic methods that hooks into the database.
@@ -171,7 +195,7 @@ class Pinger(Command):
         roster_nicknames = set(self._get_roster_nicknames(msg, match, bot))
         nicknames = roster_nicknames & (victim_nicknames | jid_nicknames)
         if not nicknames:
-            return self._get_msg(self.no_victim_msg, msg, match, bot)
+            return self._get_msg(self.msg_no_victim, msg, match, bot)
         return self.ping_all(msg, match, bot, nicknames=nicknames)
 
     def is_admin(self, mucnick=None, jid=None, roster={}, **kw):
@@ -218,13 +242,13 @@ class Pinger(Command):
         if self.get_victim_jids(victim):
             return {
                 'mto': msg.get('from'),
-                'body': self.msg_already_subscribed,
+                'raw': self.msg_already_subscribed,
             }
 
         self.add_victim_jid(victim)
         return {
             'mto': msg.get('from'),
-            'body': self.msg_subscribed,
+            'raw': self.msg_subscribed,
         }
 
     # yay copypasta... but we may recycle this type of thing in a
@@ -238,11 +262,11 @@ class Pinger(Command):
         if not self.get_victim_jids(victim):
             return {
                 'mto': msg.get('from'),
-                'body': self.msg_already_unsubscribed,
+                'raw': self.msg_already_unsubscribed,
             }
 
         self.del_victim_jid(victim)
         return {
             'mto': msg.get('from'),
-            'body': self.msg_unsubscribed,
+            'raw': self.msg_unsubscribed,
         }

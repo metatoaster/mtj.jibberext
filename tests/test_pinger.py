@@ -82,7 +82,7 @@ class TestPinger(TestCase):
     # pinging functions
 
     def test_pingall(self):
-        pinger = Pinger(ping_msg='hi')
+        pinger = Pinger(msg_ping='hi')
         msg = {'mucroom': 'room@chat.example.com'}
         result = pinger.ping_all(msg, None, bot)
         self.assertEqual(result, 'userA: userB: userC: userD: userE: hi')
@@ -91,7 +91,7 @@ class TestPinger(TestCase):
         def caller(msg, match, bot):
             # return as is...
             return match
-        pinger = Pinger(ping_msg=caller)
+        pinger = Pinger(msg_ping=caller)
         msg = {'mucroom': 'house@chat.example.com'}
         # even though match is normally a regex match result...
         result = pinger.ping_all(msg, 'not a match object', bot)
@@ -101,7 +101,7 @@ class TestPinger(TestCase):
 
     def test_ping_victim_nicknames_only(self):
         pinger = Pinger(db_src='sqlite://',
-            ping_msg='hi', no_victim_msg='I see no victims.')
+            msg_ping='hi', msg_no_victim='I see no victims.')
         msg = {'mucroom': 'room@chat.example.com'}
         result = pinger.ping_victims(msg, None, bot)
         self.assertEqual(result, 'I see no victims.')
@@ -120,7 +120,7 @@ class TestPinger(TestCase):
 
     def test_ping_victim_jids_only(self):
         pinger = Pinger(db_src='sqlite://',
-            ping_msg='hi', no_victim_msg='I see no victims.')
+            msg_ping='hi', msg_no_victim='I see no victims.')
         msg = {'mucroom': 'room@chat.example.com'}
         result = pinger.ping_victims(msg, None, bot)
         self.assertEqual(result, 'I see no victims.')
@@ -139,7 +139,7 @@ class TestPinger(TestCase):
 
     def test_ping_victim_jids_nicknames_mix(self):
         pinger = Pinger(db_src='sqlite://',
-            ping_msg='hi', no_victim_msg='I see no victims.')
+            msg_ping='hi', msg_no_victim='I see no victims.')
         msg = {'mucroom': 'room@chat.example.com'}
         result = pinger.ping_victims(msg, None, bot)
         self.assertEqual(result, 'I see no victims.')
@@ -178,6 +178,51 @@ class TestPinger(TestCase):
         result = pinger.ping_victims(msg, None, bot)
         self.assertEqual(result, 'userA: userB: userC: hi')
 
+    def test_ping_no_victim_no_msg(self):
+        pinger = Pinger(db_src='sqlite://')
+        msg = {'mucroom': 'room@chat.example.com'}
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, None)
+        result = pinger.ping_all(msg, None, bot)
+        self.assertEqual(result, None)
+
+    def test_ping_with_callable_msg(self):
+        def call(msg, match, bot, **kw):
+            return {'raw': 'call result.'}
+
+        pinger = Pinger(db_src='sqlite://', msg_no_victim=call,
+            msg_ping=call)
+        msg = {'mucroom': 'house@chat.example.com'}
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, {'raw': 'call result.'})
+        result = pinger.ping_all(msg, None, bot)
+        self.assertEqual(result, {'raw': 'userA: userC: userE: call result.'})
+
+    def test_ping_with_no_msg(self):
+        pinger = Pinger(db_src='sqlite://')
+        msg = {'mucroom': 'house@chat.example.com'}
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, None)
+        result = pinger.ping_all(msg, None, bot)
+        self.assertEqual(result, None)
+
+    def test_ping_with_bad_msg(self):
+        def call(msg, match, bot, **kw):
+            return {'raw': {}}
+        pinger = Pinger(db_src='sqlite://', msg_no_victim=call,
+            msg_ping={'raw': object})
+        msg = {'mucroom': 'house@chat.example.com'}
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, {'raw': {}})
+        result = pinger.ping_all(msg, None, bot)
+        self.assertTrue(result['raw'].startswith('userA: '))
+
+    def test_bad_get_msg_template(self):
+        _marker = object()
+        pinger = Pinger()
+        result = pinger._get_msg({'raw': _marker}, '', None, bot, template={})
+        self.assertEqual(result['raw'], _marker)
+
     def test_is_admin(self):
         pinger = Pinger(db_src='sqlite://')
         msg = {'mucnick': 'userA', 'mucroom': 'room@chat.example.com',
@@ -215,19 +260,19 @@ class TestPinger(TestCase):
 
         msg = {'from': 'usera@example.com/home', 'type': 'chat'}
         result = pinger.pm_subscribe_victim(msg, None, bot)
-        self.assertEqual(result['body'],
+        self.assertEqual(result['raw'],
             'You are now subscribed to the Pinger.')
         self.assertEqual(pinger.get_victim_jids(), ['usera@example.com'])
 
         result = pinger.pm_subscribe_victim(msg, None, bot)
-        self.assertEqual(result['body'],
+        self.assertEqual(result['raw'],
             'You are already subscribed.')
 
         result = pinger.pm_unsubscribe_victim(msg, None, bot)
-        self.assertEqual(result['body'],
+        self.assertEqual(result['raw'],
             'You are now unsubscribed to the Pinger.')
         self.assertEqual(pinger.get_victim_jids(), [])
 
         result = pinger.pm_unsubscribe_victim(msg, None, bot)
-        self.assertEqual(result['body'],
+        self.assertEqual(result['raw'],
             'You are already unsubscribed.')
