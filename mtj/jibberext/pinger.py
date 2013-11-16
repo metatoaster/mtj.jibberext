@@ -97,25 +97,33 @@ class Pinger(Command):
         except Exception as e:
             logger.error('Database connect error')
 
+    def _apply_template(self, item, template):
+        try:
+            if template:
+                return template % item
+        except:
+            logger.error('could not apply result %r into template %r')
+        return item
+
     def _get_msg(self, obj, msg, match, bot, template=None):
         if callable(obj):
             called = obj(msg=msg, match=match, bot=bot)
         else:
             called = obj
 
-        if template is None or called is None:
-            return called
+        if called is None:
+            return
 
         if not isinstance(called, dict):
-            return template % called % msg
+            return self._apply_template(called, template) % msg
 
         result = {}
         result.update(called)
-
-        try:
-            result['raw'] = template % result['raw'] % msg
-        except:
-            logger.error('could not apply result %r into template %r')
+        if 'raw' not in result:
+            # no raw message element, not doing anything.
+            return result
+        result['raw'] = self._apply_template(result['raw'], template)
+        result['raw'] = self._apply_template(msg, result['raw'])
         return result
 
     def _get_roster(self, msg, match, bot):

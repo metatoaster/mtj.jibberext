@@ -206,22 +206,46 @@ class TestPinger(TestCase):
         result = pinger.ping_all(msg, None, bot)
         self.assertEqual(result, None)
 
-    def test_ping_with_bad_msg(self):
+    def test_ping_format(self):
         def call(msg, match, bot, **kw):
-            return {'raw': {}}
+            return {'raw': '%(mucnick)s: nope.avi'}
         pinger = Pinger(db_src='sqlite://', msg_no_victim=call,
-            msg_ping={'raw': object})
-        msg = {'mucroom': 'house@chat.example.com'}
+            msg_ping='blame %(mucnick)s.')
+        msg = {'mucnick': 'tester', 'mucroom': 'house@chat.example.com'}
         result = pinger.ping_victims(msg, None, bot)
-        self.assertEqual(result, {'raw': {}})
+        self.assertEqual(result, {'raw': 'tester: nope.avi'})
+        result = pinger.ping_all(msg, None, bot)
+        self.assertEqual(result, 'userA: userC: userE: blame tester.')
+
+    def test_ping_format_reversed(self):
+        def call(msg, match, bot, **kw):
+            return {'raw': 'blame %(mucnick)s.'}
+        pinger = Pinger(db_src='sqlite://', msg_ping=call,
+            msg_no_victim='%(mucnick)s: nope.avi')
+        msg = {'mucnick': 'tester', 'mucroom': 'house@chat.example.com'}
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'tester: nope.avi')
+        result = pinger.ping_all(msg, None, bot)
+        self.assertEqual(result, {'raw': 'userA: userC: userE: blame tester.'})
+
+    def test_ping_with_bad_msg(self):
+        pinger = Pinger(db_src='sqlite://', msg_ping={'raw': object})
+        msg = {'mucnick': 'tester', 'mucroom': 'house@chat.example.com'}
         result = pinger.ping_all(msg, None, bot)
         self.assertTrue(result['raw'].startswith('userA: '))
 
     def test_bad_get_msg_template(self):
         _marker = object()
         pinger = Pinger()
-        result = pinger._get_msg({'raw': _marker}, '', None, bot, template={})
-        self.assertEqual(result['raw'], _marker)
+        result = pinger._get_msg({'raw': _marker}, '', None, bot,
+            template=_marker)
+        self.assertEqual(result['raw'], '')
+
+        _marker = object()
+        pinger = Pinger()
+        result = pinger._get_msg({'fail': 'fail'}, '', None, bot,
+            template=_marker)
+        self.assertEqual(result, {'fail': 'fail'})
 
     def test_is_admin(self):
         pinger = Pinger(db_src='sqlite://')
