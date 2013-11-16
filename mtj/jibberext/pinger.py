@@ -1,3 +1,4 @@
+import time
 import logging
 
 from sqlalchemy import create_engine
@@ -41,6 +42,8 @@ class Pinger(Command):
                 ('role', ['moderator']),
             ),
 
+            timeout_victim_ping=300,
+
             msg_ping=None,
             msg_no_victim=None,
 
@@ -62,6 +65,9 @@ class Pinger(Command):
         self.msg_no_victim = msg_no_victim
         self.nick_joiner = nick_joiner
         self.stanza_admin_conditions = stanza_admin_conditions
+
+        self.next_ping = 0
+        self.timeout_victim_ping = timeout_victim_ping
 
         self.msg_subscribed = msg_subscribed
         self.msg_already_subscribed = msg_already_subscribed
@@ -198,6 +204,10 @@ class Pinger(Command):
             if str(details.get('jid', '')).split('/')[0] in jids]
 
     def ping_victims(self, msg, match, bot, **kw):
+        if time.time() < self.next_ping:
+            return
+        self.next_ping = time.time() + self.timeout_victim_ping
+
         victim_nicknames = set(self.get_victim_nicknames())
         jid_nicknames = set(self._get_nicknames_by_jid(msg, match, bot))
         roster_nicknames = set(self._get_roster_nicknames(msg, match, bot))

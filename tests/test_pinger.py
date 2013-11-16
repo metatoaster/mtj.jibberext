@@ -97,10 +97,20 @@ class TestPinger(TestCase):
         result = pinger.ping_all(msg, 'not a match object', bot)
         self.assertEqual(result, 'userA: userC: userE: not a match object')
 
+    def test_ping_victim_timeout(self):
+        pinger = Pinger(db_src='sqlite://',
+            msg_ping='hi', msg_no_victim='I see no victims.')
+        msg = {'mucroom': 'room@chat.example.com'}
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, 'I see no victims.')
+
+        result = pinger.ping_victims(msg, None, bot)
+        self.assertEqual(result, None)
+
     # ping and db
 
     def test_ping_victim_nicknames_only(self):
-        pinger = Pinger(db_src='sqlite://',
+        pinger = Pinger(db_src='sqlite://', timeout_victim_ping=0,
             msg_ping='hi', msg_no_victim='I see no victims.')
         msg = {'mucroom': 'room@chat.example.com'}
         result = pinger.ping_victims(msg, None, bot)
@@ -119,7 +129,7 @@ class TestPinger(TestCase):
         self.assertEqual(result, 'tester 1: hi')
 
     def test_ping_victim_jids_only(self):
-        pinger = Pinger(db_src='sqlite://',
+        pinger = Pinger(db_src='sqlite://', timeout_victim_ping=0,
             msg_ping='hi', msg_no_victim='I see no victims.')
         msg = {'mucroom': 'room@chat.example.com'}
         result = pinger.ping_victims(msg, None, bot)
@@ -138,7 +148,7 @@ class TestPinger(TestCase):
         self.assertEqual(result, 'tester 1: hi')
 
     def test_ping_victim_jids_nicknames_mix(self):
-        pinger = Pinger(db_src='sqlite://',
+        pinger = Pinger(db_src='sqlite://', timeout_victim_ping=0,
             msg_ping='hi', msg_no_victim='I see no victims.')
         msg = {'mucroom': 'room@chat.example.com'}
         result = pinger.ping_victims(msg, None, bot)
