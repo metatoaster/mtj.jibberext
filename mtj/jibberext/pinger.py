@@ -15,6 +15,44 @@ from mtj.jibber.core import Command
 logger = logging.getLogger(__name__)
 
 
+example = """
+{
+    "nickname": "ShobonBot",
+    "rooms": [
+        "deedeereddit@chat.pleaseignore.com"
+    ],
+    "commands_max_match": 1,
+    "packages": [
+        {
+            "package": "mtj.jibberext.pinger.Pinger",
+            "kwargs": {
+                "db_src": "sqlite:///shobon.db",
+                "msg_ping": "%(mucnick)s wants you.",
+                "msg_no_victim": "%(mucnick)s: nobody to ping :(",
+                "msg_pm_subscribed": "You will now be pinged.",
+                "msg_pm_already_subscribed": "You were already being pinged.",
+                "msg_pm_unsubscribed": "You are no longer be pinged.",
+                "msg_pm_already_unsubscribed": "You were already not being pinged.",
+                "msg_muc_subscribed": "%s will now act as a mentor.",
+                "msg_muc_already_subscribed": "%s is already a mentor.",
+                "msg_muc_unsubscribed": "%s will no longer act as a mentor.",
+                "msg_muc_already_unsubscribed": "%s is not a mentor."
+            },
+            "commands": [
+                ["^!ping$", "ping_victims"],
+                ["^!addmentor (.*)$", "muc_admin_subscribe_victim_nickname"],
+                ["^!delmentor (.*)$", "muc_admin_unsubscribe_victim_nickname"]
+            ],
+            "private_commands": [
+                ["^subscribe$", "pm_subscribe_victim"],
+                ["^unsubscribe$", "pm_unsubscribe_victim"]
+            ]
+        }
+    ]
+}
+"""
+
+
 class Pinger(Command):
     """
     A thing that spams nicknames of a muc into the chat.  Pinging.
