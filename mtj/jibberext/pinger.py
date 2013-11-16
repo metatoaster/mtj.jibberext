@@ -39,7 +39,7 @@ example = """
                 "msg_muc_already_unsubscribed": "%s is not a mentor."
             },
             "commands": [
-                ["^!ping$", "ping_victims"],
+                ["^!ping(?P<suffix>.*)$", "ping_victims"],
                 ["^!addmentor (.*)$", "muc_admin_subscribe_victim_nickname"],
                 ["^!delmentor (.*)$", "muc_admin_unsubscribe_victim_nickname"]
             ],
