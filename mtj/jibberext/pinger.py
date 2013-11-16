@@ -38,6 +38,10 @@ class Pinger(Command):
             ping_msg=None,
             no_victim_msg=None,
             nick_joiner=': ',
+            stanza_admin_conditions=(
+                ('affiliation', ['owner']),
+                ('role', ['moderator']),
+            )
         ):
         self.tables = {}
 
@@ -51,6 +55,7 @@ class Pinger(Command):
         self.ping_msg = ping_msg
         self.no_victim_msg = no_victim_msg
         self.nick_joiner = nick_joiner
+        self.stanza_admin_conditions = stanza_admin_conditions
 
     def initialize_db(self):
         if hasattr(self, '_metadata'):
@@ -122,12 +127,14 @@ class Pinger(Command):
                     table.c.get(value_key) == value)
                 conn.execute(sql)
 
-        def get_(self):
+        def get_(self, value=None):
             table = self.tables.get(table_key)
             conn = self.get_connection()
             if conn is None:
                 return []
             sql = select([table.c.get(value_key)])
+            if value:
+                sql = sql.where(table.c.get(value_key) == value)
             result = [i[0] for i in conn.execute(sql).fetchall()]
             conn.close()
             return result
@@ -157,3 +164,38 @@ class Pinger(Command):
         if not nicknames:
             return self._get_msg(self.no_victim_msg, msg, match, bot)
         return self.ping_all(msg, match, bot, nicknames=nicknames)
+
+    def is_admin(self, mucnick=None, jid=None, roster={}, **kw):
+        """
+        Determine from arguments whether it represents an admin.
+
+        Typically the arguments is the entire dict object for any
+        message stanzas.
+
+        The jid argument will used if and only if the message stanza
+        does not resolved to one.
+        """
+
+        details = {}
+        from_ = kw.get('from', None)
+
+        # Step 1: check the mucnick against its roster.
+        if mucnick:
+            rosteritem = roster.get(mucnick, {})
+            for key, values in self.stanza_admin_conditions:
+                if rosteritem.get(key) in values:
+                    return True
+
+            # Step 1.5: if stanza does not satisfy that condition, fall
+            # back to jid.
+            if jid is None:
+                jid = roster.get(mucnick, {}).get('jid')
+        if not jid and from_:
+            jid = from_
+
+        # Step 2: jid lookup from list of admins.
+        # roster will _not_ be available in nearly all cases in how this
+        # is invoked; rather the jid would have already been resolved
+        # thus render that additioal lookup unnecessary.
+        jid_base = str(jid).split('/')[0]
+        return len(self.get_admin_jids(jid_base)) > 0

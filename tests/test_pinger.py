@@ -15,16 +15,16 @@ class FakeBot(object):
 
 bot = FakeBot({
     'room@chat.example.com': {
-        'userA': {'jid': 'userA@example.com'},
-        'userB': {'jid': 'userB@example.com'},
-        'userC': {'jid': 'userC@example.com/fail'},
-        'userD': {'jid': 'userD@example.com/fail'},
-        'userE': {'jid': 'userE@example.com'},
+        'userA': {'jid': 'usera@example.com'},
+        'userB': {'jid': 'userb@example.com'},
+        'userC': {'jid': 'userc@example.com/fail'},
+        'userD': {'jid': 'userd@example.com/fail', 'role': 'moderator'},
+        'userE': {'jid': 'usere@example.com', 'affiliation': 'owner'},
     },
     'house@chat.example.com': {
-        'userA': {'jid': 'userA@example.com'},
-        'userC': {'jid': 'userC@example.com/fail'},
-        'userE': {'jid': 'userE@example.com'},
+        'userA': {'jid': 'usera@example.com'},
+        'userC': {'jid': 'userc@example.com/fail'},
+        'userE': {'jid': 'usere@example.com'},
     },
     'kitchen@chat.example.com': {
         'tester 1': {'jid': 'tester1@example.com/derp'},
@@ -129,7 +129,7 @@ class TestPinger(TestCase):
         result = pinger.ping_victims(msg, None, bot)
         self.assertEqual(result, 'I see no victims.')
 
-        pinger.add_victim_jid('userA@example.com')
+        pinger.add_victim_jid('usera@example.com')
         result = pinger.ping_victims(msg, None, bot)
         self.assertEqual(result, 'userA: hi')
 
@@ -148,7 +148,7 @@ class TestPinger(TestCase):
         result = pinger.ping_victims(msg, None, bot)
         self.assertEqual(result, 'I see no victims.')
 
-        pinger.add_victim_jid('userA@example.com')
+        pinger.add_victim_jid('usera@example.com')
         result = pinger.ping_victims(msg, None, bot)
         self.assertEqual(result, 'userA: hi')
 
@@ -166,14 +166,42 @@ class TestPinger(TestCase):
 
         msg = {'mucroom': 'room@chat.example.com'}
 
-        pinger.add_victim_jid('userB@example.com')
+        pinger.add_victim_jid('userb@example.com')
         result = pinger.ping_victims(msg, None, bot)
         self.assertEqual(result, 'userA: userB: hi')
 
-        pinger.add_victim_nickname('userC@example.com')
+        pinger.add_victim_nickname('userc@example.com')
         result = pinger.ping_victims(msg, None, bot)
         self.assertEqual(result, 'userA: userB: hi')
 
-        pinger.add_victim_jid('userC@example.com')
+        pinger.add_victim_jid('userc@example.com')
         result = pinger.ping_victims(msg, None, bot)
         self.assertEqual(result, 'userA: userB: userC: hi')
+
+    def test_is_admin(self):
+        pinger = Pinger(db_src='sqlite://')
+        msg = {'mucnick': 'userA', 'mucroom': 'room@chat.example.com',
+            'from': 'somewhere',}
+        roster = pinger._get_roster(msg, None, bot)
+        self.assertFalse(pinger.is_admin(roster=roster, **msg))
+        self.assertFalse(pinger.is_admin(jid='usera@example.com'))
+
+        pinger.add_admin_jid('usera@example.com')
+        self.assertTrue(pinger.is_admin(roster=roster, **msg))
+        self.assertTrue(pinger.is_admin(jid='usera@example.com'))
+
+        # private message.
+        msg = {'from': 'usera@example.com/home'}
+        self.assertTrue(pinger.is_admin(**msg))
+
+        pinger.del_admin_jid('usera@example.com')
+        self.assertFalse(pinger.is_admin(jid='usera@example.com'))
+
+        # default affiliation/role
+        msg = {'mucnick': 'userD', 'mucroom': 'room@chat.example.com',
+            'from': 'somewhere',}
+        self.assertTrue(pinger.is_admin(roster=roster, **msg))
+
+        msg = {'mucnick': 'userE', 'mucroom': 'room@chat.example.com',
+            'from': 'somewhere',}
+        self.assertTrue(pinger.is_admin(roster=roster, **msg))
