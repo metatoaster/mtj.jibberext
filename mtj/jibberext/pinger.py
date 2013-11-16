@@ -304,7 +304,7 @@ class Pinger(Command):
         if not self.is_admin(roster=self._get_roster(msg, match, bot), **msg):
             return
 
-        victim = match.group()
+        victim = ''.join(match.groups())
         # XXX split this and the above out so that jid/nicknames can be
         # more easily selectable?
 
@@ -326,7 +326,7 @@ class Pinger(Command):
         if not self.is_admin(roster=self._get_roster(msg, match, bot), **msg):
             return
 
-        victim = match.group()
+        victim = ''.join(match.groups())
 
         if not self.get_victim_nicknames(victim):
             return {
