@@ -205,3 +205,29 @@ class TestPinger(TestCase):
         msg = {'mucnick': 'userE', 'mucroom': 'room@chat.example.com',
             'from': 'somewhere',}
         self.assertTrue(pinger.is_admin(roster=roster, **msg))
+
+    def test_ping_subscription(self):
+        pinger = Pinger(db_src='sqlite://')
+        msg = {'mucnick': 'userA', 'mucroom': 'room@chat.example.com',
+            'from': 'somewhere', 'type': 'groupchat'}
+        self.assertTrue(pinger.pm_subscribe_victim(msg, None, bot) is None)
+        self.assertTrue(pinger.pm_unsubscribe_victim(msg, None, bot) is None)
+
+        msg = {'from': 'usera@example.com/home', 'type': 'chat'}
+        result = pinger.pm_subscribe_victim(msg, None, bot)
+        self.assertEqual(result['body'],
+            'You are now subscribed to the Pinger.')
+        self.assertEqual(pinger.get_victim_jids(), ['usera@example.com'])
+
+        result = pinger.pm_subscribe_victim(msg, None, bot)
+        self.assertEqual(result['body'],
+            'You are already subscribed.')
+
+        result = pinger.pm_unsubscribe_victim(msg, None, bot)
+        self.assertEqual(result['body'],
+            'You are now unsubscribed to the Pinger.')
+        self.assertEqual(pinger.get_victim_jids(), [])
+
+        result = pinger.pm_unsubscribe_victim(msg, None, bot)
+        self.assertEqual(result['body'],
+            'You are already unsubscribed.')

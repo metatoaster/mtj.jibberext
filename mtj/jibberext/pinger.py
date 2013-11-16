@@ -41,7 +41,11 @@ class Pinger(Command):
             stanza_admin_conditions=(
                 ('affiliation', ['owner']),
                 ('role', ['moderator']),
-            )
+            ),
+            msg_subscribed='You are now subscribed to the Pinger.',
+            msg_already_subscribed='You are already subscribed.',
+            msg_unsubscribed='You are now unsubscribed to the Pinger.',
+            msg_already_unsubscribed='You are already unsubscribed.',
         ):
         self.tables = {}
 
@@ -56,6 +60,11 @@ class Pinger(Command):
         self.no_victim_msg = no_victim_msg
         self.nick_joiner = nick_joiner
         self.stanza_admin_conditions = stanza_admin_conditions
+
+        self.msg_subscribed = msg_subscribed
+        self.msg_already_subscribed = msg_already_subscribed
+        self.msg_unsubscribed = msg_unsubscribed
+        self.msg_already_unsubscribed = msg_already_unsubscribed
 
     def initialize_db(self):
         if hasattr(self, '_metadata'):
@@ -199,3 +208,41 @@ class Pinger(Command):
         # thus render that additioal lookup unnecessary.
         jid_base = str(jid).split('/')[0]
         return len(self.get_admin_jids(jid_base)) > 0
+
+    def pm_subscribe_victim(self, msg, match, bot, **kw):
+        # ensure this is a chat message
+        if msg.get('type') != 'chat':
+            return
+        victim = str(msg.get('from')).split('/')[0]
+
+        if self.get_victim_jids(victim):
+            return {
+                'mto': msg.get('from'),
+                'body': self.msg_already_subscribed,
+            }
+
+        self.add_victim_jid(victim)
+        return {
+            'mto': msg.get('from'),
+            'body': self.msg_subscribed,
+        }
+
+    # yay copypasta... but we may recycle this type of thing in a
+    # different context, so leaving this here until it's sorted.
+    def pm_unsubscribe_victim(self, msg, match, bot, **kw):
+        # ensure this is a chat message
+        if msg.get('type') != 'chat':
+            return
+        victim = str(msg.get('from')).split('/')[0]
+
+        if not self.get_victim_jids(victim):
+            return {
+                'mto': msg.get('from'),
+                'body': self.msg_already_unsubscribed,
+            }
+
+        self.del_victim_jid(victim)
+        return {
+            'mto': msg.get('from'),
+            'body': self.msg_unsubscribed,
+        }
