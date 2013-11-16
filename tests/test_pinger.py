@@ -88,15 +88,29 @@ class TestPinger(TestCase):
         result = pinger.ping_all(msg, None, bot)
         self.assertEqual(result, 'userA: userB: userC: userD: userE: hi')
 
+    def test_pingall_custom_replace(self):
+        match = re.search('!ping (?P<replace>.*)', '!ping the custom message')
+        pinger = Pinger(msg_ping='hi')
+        msg = {'mucroom': 'house@chat.example.com'}
+        result = pinger.ping_all(msg, match, bot)
+        self.assertEqual(result, 'userA: userC: userE: the custom message')
+
+    def test_pingall_custom_suffix(self):
+        match = re.search('!ping(?P<suffix> .*)', '!ping add this too')
+        pinger = Pinger(msg_ping='hi')
+        msg = {'mucroom': 'house@chat.example.com'}
+        result = pinger.ping_all(msg, match, bot)
+        self.assertEqual(result, 'userA: userC: userE: hi add this too')
+
     def test_pingall_callable(self):
         def caller(msg, match, bot):
             # return as is...
-            return match
+            return 'a string'
         pinger = Pinger(msg_ping=caller)
         msg = {'mucroom': 'house@chat.example.com'}
         # even though match is normally a regex match result...
-        result = pinger.ping_all(msg, 'not a match object', bot)
-        self.assertEqual(result, 'userA: userC: userE: not a match object')
+        result = pinger.ping_all(msg, None, bot)
+        self.assertEqual(result, 'userA: userC: userE: a string')
 
     def test_ping_victim_timeout(self):
         pinger = Pinger(db_src='sqlite://',

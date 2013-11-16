@@ -190,14 +190,23 @@ class Pinger(Command):
         return self._get_roster(msg, match, bot).keys()
 
     def ping_all(self, msg, match, bot, nicknames=None, **kw):
-        if not self.msg_ping:
+        suffix = ''
+        msg_ping = self.msg_ping
+
+        if match:
+            replace = match.groupdict().get('replace')
+            suffix = match.groupdict().get('suffix', '')
+            if replace:
+                msg_ping = replace
+
+        if not msg_ping:
             return
 
         if not nicknames:
             nicknames = self._get_roster_nicknames(msg, match, bot)
         nickstr = self.nick_joiner.join(sorted(nicknames))
-        result = self._get_msg(self.msg_ping, msg, match, bot,
-            template=(nickstr + self.nick_joiner + '%s'))
+        result = self._get_msg(msg_ping, msg, match, bot,
+            template=(nickstr + self.nick_joiner + '%s' + suffix))
         return result
 
     # XXX these really could be hooked to a simple list accessor that
