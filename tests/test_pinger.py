@@ -1,3 +1,4 @@
+import re
 from unittest import TestCase, skipIf
 
 from mtj.jibberext.pinger import Pinger
@@ -285,28 +286,60 @@ class TestPinger(TestCase):
             'from': 'somewhere',}
         self.assertTrue(pinger.is_admin(roster=roster, **msg))
 
-    def test_ping_subscription(self):
+    def test_ping_subscription_pm(self):
         pinger = Pinger(db_src='sqlite://')
         msg = {'mucnick': 'userA', 'mucroom': 'room@chat.example.com',
             'from': 'somewhere', 'type': 'groupchat'}
-        self.assertTrue(pinger.pm_subscribe_victim(msg, None, bot) is None)
-        self.assertTrue(pinger.pm_unsubscribe_victim(msg, None, bot) is None)
+        self.assertTrue(pinger.pm_subscribe_victim_jid(msg, None, bot) is None)
+        self.assertTrue(
+            pinger.pm_unsubscribe_victim_jid(msg, None, bot) is None)
 
         msg = {'from': 'usera@example.com/home', 'type': 'chat'}
-        result = pinger.pm_subscribe_victim(msg, None, bot)
+        result = pinger.pm_subscribe_victim_jid(msg, None, bot)
         self.assertEqual(result['raw'],
             'You are now subscribed to the Pinger.')
         self.assertEqual(pinger.get_victim_jids(), ['usera@example.com'])
 
-        result = pinger.pm_subscribe_victim(msg, None, bot)
+        result = pinger.pm_subscribe_victim_jid(msg, None, bot)
         self.assertEqual(result['raw'],
             'You are already subscribed.')
 
-        result = pinger.pm_unsubscribe_victim(msg, None, bot)
+        result = pinger.pm_unsubscribe_victim_jid(msg, None, bot)
         self.assertEqual(result['raw'],
             'You are now unsubscribed to the Pinger.')
         self.assertEqual(pinger.get_victim_jids(), [])
 
-        result = pinger.pm_unsubscribe_victim(msg, None, bot)
+        result = pinger.pm_unsubscribe_victim_jid(msg, None, bot)
         self.assertEqual(result['raw'],
             'You are already unsubscribed.')
+
+    def test_ping_subscription_muc(self):
+        pinger = Pinger(db_src='sqlite://')
+        match = re.search('(userA)', 'userA')
+
+        msg = {'mucnick': 'userA', 'mucroom': 'room@chat.example.com',
+            'from': 'somewhere', 'type': 'groupchat'}
+        self.assertTrue(pinger.muc_admin_subscribe_victim_nickname(
+            msg, match, bot) is None)
+        self.assertTrue(pinger.muc_admin_unsubscribe_victim_nickname(
+            msg, match, bot) is None)
+
+        msg = {'mucnick': 'userE', 'mucroom': 'room@chat.example.com',
+            'from': 'somewhere', 'type': 'groupchat'}
+        result = pinger.muc_admin_subscribe_victim_nickname(msg, match, bot)
+        self.assertEqual(result['raw'],
+            'userA is now subscribed.')
+        self.assertEqual(pinger.get_victim_nicknames(), ['userA'])
+
+        result = pinger.muc_admin_subscribe_victim_nickname(msg, match, bot)
+        self.assertEqual(result['raw'],
+            'userA is already subscribed.')
+
+        result = pinger.muc_admin_unsubscribe_victim_nickname(msg, match, bot)
+        self.assertEqual(result['raw'],
+            'userA is now unsubscribed.')
+        self.assertEqual(pinger.get_victim_nicknames(), [])
+
+        result = pinger.muc_admin_unsubscribe_victim_nickname(msg, match, bot)
+        self.assertEqual(result['raw'],
+            'userA is already unsubscribed.')

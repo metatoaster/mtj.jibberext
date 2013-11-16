@@ -47,10 +47,16 @@ class Pinger(Command):
             msg_ping=None,
             msg_no_victim=None,
 
-            msg_subscribed='You are now subscribed to the Pinger.',
-            msg_already_subscribed='You are already subscribed.',
-            msg_unsubscribed='You are now unsubscribed to the Pinger.',
-            msg_already_unsubscribed='You are already unsubscribed.',
+            msg_pm_subscribed='You are now subscribed to the Pinger.',
+            msg_pm_already_subscribed='You are already subscribed.',
+            msg_pm_unsubscribed='You are now unsubscribed to the Pinger.',
+            msg_pm_already_unsubscribed='You are already unsubscribed.',
+
+            # XXX this is why we need a way to normalize matches for groups.
+            msg_muc_subscribed='%s is now subscribed.',
+            msg_muc_already_subscribed='%s is already subscribed.',
+            msg_muc_unsubscribed='%s is now unsubscribed.',
+            msg_muc_already_unsubscribed='%s is already unsubscribed.',
         ):
         self.tables = {}
 
@@ -69,10 +75,15 @@ class Pinger(Command):
         self.next_ping = 0
         self.timeout_victim_ping = timeout_victim_ping
 
-        self.msg_subscribed = msg_subscribed
-        self.msg_already_subscribed = msg_already_subscribed
-        self.msg_unsubscribed = msg_unsubscribed
-        self.msg_already_unsubscribed = msg_already_unsubscribed
+        self.msg_pm_subscribed = msg_pm_subscribed
+        self.msg_pm_already_subscribed = msg_pm_already_subscribed
+        self.msg_pm_unsubscribed = msg_pm_unsubscribed
+        self.msg_pm_already_unsubscribed = msg_pm_already_unsubscribed
+
+        self.msg_muc_subscribed = msg_muc_subscribed
+        self.msg_muc_already_subscribed = msg_muc_already_subscribed
+        self.msg_muc_unsubscribed = msg_muc_unsubscribed
+        self.msg_muc_already_unsubscribed = msg_muc_already_unsubscribed
 
     def initialize_db(self):
         if hasattr(self, '_metadata'):
@@ -251,7 +262,7 @@ class Pinger(Command):
         jid_base = str(jid).split('/')[0]
         return len(self.get_admin_jids(jid_base)) > 0
 
-    def pm_subscribe_victim(self, msg, match, bot, **kw):
+    def pm_subscribe_victim_jid(self, msg, match, bot, **kw):
         # ensure this is a chat message
         if msg.get('type') != 'chat':
             return
@@ -260,18 +271,18 @@ class Pinger(Command):
         if self.get_victim_jids(victim):
             return {
                 'mto': msg.get('from'),
-                'raw': self.msg_already_subscribed,
+                'raw': self.msg_pm_already_subscribed,
             }
 
         self.add_victim_jid(victim)
         return {
             'mto': msg.get('from'),
-            'raw': self.msg_subscribed,
+            'raw': self.msg_pm_subscribed,
         }
 
     # yay copypasta... but we may recycle this type of thing in a
     # different context, so leaving this here until it's sorted.
-    def pm_unsubscribe_victim(self, msg, match, bot, **kw):
+    def pm_unsubscribe_victim_jid(self, msg, match, bot, **kw):
         # ensure this is a chat message
         if msg.get('type') != 'chat':
             return
@@ -280,11 +291,51 @@ class Pinger(Command):
         if not self.get_victim_jids(victim):
             return {
                 'mto': msg.get('from'),
-                'raw': self.msg_already_unsubscribed,
+                'raw': self.msg_pm_already_unsubscribed,
             }
 
         self.del_victim_jid(victim)
         return {
             'mto': msg.get('from'),
-            'raw': self.msg_unsubscribed,
+            'raw': self.msg_pm_unsubscribed,
+        }
+
+    def muc_admin_subscribe_victim_nickname(self, msg, match, bot, **kw):
+        if not self.is_admin(roster=self._get_roster(msg, match, bot), **msg):
+            return
+
+        victim = match.group()
+        # XXX split this and the above out so that jid/nicknames can be
+        # more easily selectable?
+
+        if self.get_victim_nicknames(victim):
+            return {
+                # mucroom is currently implied for a command; ditto for
+                # below.
+                # 'mto': msg.get('mucroom'),
+                'raw': self.msg_muc_already_subscribed % victim,
+            }
+
+        self.add_victim_nickname(victim)
+        return {
+            # 'mto': msg.get('mucroom'),
+            'raw': self.msg_muc_subscribed % victim,
+        }
+
+    def muc_admin_unsubscribe_victim_nickname(self, msg, match, bot, **kw):
+        if not self.is_admin(roster=self._get_roster(msg, match, bot), **msg):
+            return
+
+        victim = match.group()
+
+        if not self.get_victim_nicknames(victim):
+            return {
+                # 'mto': msg.get('mucroom'),
+                'raw': self.msg_muc_already_unsubscribed % victim,
+            }
+
+        self.del_victim_nickname(victim)
+        return {
+            # 'mto': msg.get('mucroomk'),
+            'raw': self.msg_muc_unsubscribed % victim,
         }
