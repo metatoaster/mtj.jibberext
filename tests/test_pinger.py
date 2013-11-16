@@ -95,12 +95,20 @@ class TestPinger(TestCase):
         result = pinger.ping_all(msg, match, bot)
         self.assertEqual(result, 'userA: userC: userE: the custom message')
 
+        match = re.search('!ping(?P<suffix> .*)', '!ping')
+        result = pinger.ping_all(msg, match, bot)
+        self.assertEqual(result, 'userA: userC: userE: hi')
+
     def test_pingall_custom_suffix(self):
         match = re.search('!ping(?P<suffix> .*)', '!ping add this too')
         pinger = Pinger(msg_ping='hi')
         msg = {'mucroom': 'house@chat.example.com'}
         result = pinger.ping_all(msg, match, bot)
         self.assertEqual(result, 'userA: userC: userE: hi add this too')
+
+        match = re.search('!ping(?P<suffix> .*)', '!ping')
+        result = pinger.ping_all(msg, match, bot)
+        self.assertEqual(result, 'userA: userC: userE: hi')
 
     def test_pingall_callable(self):
         def caller(msg, match, bot):
