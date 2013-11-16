@@ -4,6 +4,7 @@ omit =
     */lib-python/?.?/*.py
     */lib_pypy/*.py
     */site-packages/*
+    */src/*.py
     */.env*/*.py
 
 exclude_lines =
