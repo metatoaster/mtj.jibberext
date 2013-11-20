@@ -41,6 +41,10 @@ class RandomImgurTestCase(TestCase):
         imgs.refresh()
         self.assertEqual(len(imgs.items), 4)
 
+    def test_play(self):
+        session = DummySession()
+        imgs = RandomImgur('example_client_id', 'gallery/r/ferret/',
+            requests_session=session)
         result = imgs.play(msg={}, match=None, bot=None)
         self.assertEqual(result[:5], 'Hello')
         self.assertEqual(result[10:13], 'url')

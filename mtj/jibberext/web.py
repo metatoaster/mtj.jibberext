@@ -33,5 +33,6 @@ class RandomImgur(PickOneFromSource):
         return raw.get(self.root_data_key)
 
     def play(self, msg, match, **kw):
+        self.refresh()
         result = random.choice(self.items)
         return self.format_msg % result % msg
