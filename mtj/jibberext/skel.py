@@ -1,6 +1,9 @@
 import time
+import logging
 
 from mtj.jibber.bot import PickOne
+
+logger = logging.getLogger(__name__)
 
 
 class PickOneFromSource(PickOne):
@@ -22,5 +25,10 @@ class PickOneFromSource(PickOne):
     def refresh(self):
         if time.time() < self._next_refresh:
             return
-        self.update_items()
+        try:
+            items = self.update_items()
+        except:
+            logger.exception('error calling refresh')
+            return
+        self._items = items
         self._next_refresh = time.time() + self.timeout

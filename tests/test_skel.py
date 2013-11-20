@@ -6,24 +6,29 @@ from mtj.jibberext.skel import PickOneFromSource
 
 class PickOneFromSourceTestCase(TestCase):
 
-    def test_refresh(self):
+    def test_update_items(self):
+        p1 = PickOneFromSource()
+        self.assertRaises(NotImplementedError, p1.update_items)
+
+    def test_refresh_failure(self):
         p1 = PickOneFromSource()
         self.assertTrue(p1.timeout > 0)
         self.assertEqual(p1._next_refresh, 0)
-        self.assertRaises(NotImplementedError, p1.refresh)
-        p1._next_refresh = time.time() + 100
         p1.refresh()
+        # failure happened.
+        self.assertEqual(p1._next_refresh, 0)
 
     def test_refresh_update(self):
+        marker = object()
         p1 = PickOneFromSource()
-        p1.update_items = lambda: True
+        p1.update_items = lambda: marker
         self.assertTrue(p1.timeout > 0)
         self.assertEqual(p1._next_refresh, 0)
         p1.refresh()
         self.assertNotEqual(p1._next_refresh, 0)
-
-    def test_items(self):
-        marker = object()
-        p1 = PickOneFromSource()
-        p1._items = marker
         self.assertEqual(p1.items, marker)
+
+        # not update due to timeout
+        p1._items = None
+        p1.refresh()
+        self.assertIsNone(p1.items)
