@@ -16,10 +16,10 @@ class DummyResponse(object):
 class DummySession(object):
     data = (
         '{"data":['
-            '{"id":"1","title":"Hello.","description":null,"link":"url1"},'
-            '{"id":"2","title":"Hello.","description":null,"link":"url2"},'
-            '{"id":"2","title":"Hello.","description":null,"link":null},'
-            '{"id":"3","title":"Hello.","description":null,"link":"url3"}'
+            '{"id":"1","title":"Hello1.","description":null,"link":"url1"},'
+            '{"id":"2","title":"Hello2.","description":null,"link":"url2"},'
+            '{"id":"2","title":"Hello3.","description":null,"link":"url3"},'
+            '{"id":"3","title":"Hello4.","description":null,"link":"url4"}'
         ']}'
     )
         
@@ -39,4 +39,8 @@ class RandomImgurTestCase(TestCase):
         imgs = RandomImgur('example_client_id', 'gallery/r/ferret/',
             requests_session=session)
         imgs.refresh()
-        self.assertEqual(imgs.items, ['url1', 'url2', 'url3'])
+        self.assertEqual(len(imgs.items), 4)
+
+        result = imgs.play(msg={}, match=None, bot=None)
+        self.assertEqual(result[:5], 'Hello')
+        self.assertEqual(result[10:13], 'url')

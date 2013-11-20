@@ -1,5 +1,6 @@
 import time
 import requests
+import random
 
 from mtj.jibberext.skel import PickOneFromSource
 
@@ -9,8 +10,8 @@ class RandomImgur(PickOneFromSource):
     def __init__(self, client_id, target,
             site_root='https://api.imgur.com/3/',
             root_data_key='data',
-            link_key='link',
             requests_session=None,
+            format_msg='%(title)s - %(link)s',
             **kw
         ):
         super(RandomImgur, self).__init__(**kw)
@@ -18,7 +19,7 @@ class RandomImgur(PickOneFromSource):
         self.target = target
         self.site_root = site_root
         self.root_data_key = root_data_key
-        self.link_key = link_key
+        self.format_msg = format_msg
 
         if requests_session is None:
             requests_session = requests.Session()
@@ -29,5 +30,8 @@ class RandomImgur(PickOneFromSource):
 
     def update_items(self):
         raw = self.requests_session.get(self.site_root + self.target).json()
-        item = [r.get(self.link_key) for r in raw.get(self.root_data_key)]
-        return [i for i in item if i is not None]
+        return raw.get(self.root_data_key)
+
+    def play(self, msg, match, **kw):
+        result = random.choice(self.items)
+        return self.format_msg % result % msg
