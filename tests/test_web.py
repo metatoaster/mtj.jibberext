@@ -45,6 +45,35 @@ class RandomImgurTestCase(TestCase):
         session = DummySession()
         imgs = RandomImgur('example_client_id', 'gallery/r/ferret/',
             requests_session=session)
-        result = imgs.play(msg={}, match=None, bot=None)
+        result = imgs.play(msg={'mucnick': 'Tester'}, match=None, bot=None)
         self.assertEqual(result[:5], 'Hello')
         self.assertEqual(result[10:13], 'url')
+
+    def test_play_msg(self):
+        imgs = RandomImgur('example_client_id', 'gallery/r/ferret/',
+            format_msg='%%(mucnick)s: %(link)s',
+            format_msg_timer='%(link)s',
+            format_msg_nsfw='%%(mucnick)s: %(link)s :nws:',
+            format_msg_timer_nsfw='%(link)s :nws:',
+        )
+        imgs._next_refresh = time.time() + 3600
+
+        # timers
+
+        imgs._items = [{'id': '1', 'nsfw': False, 'link': 'url1'}]
+        result = imgs.play(msg=None, match=None, bot=None)
+        self.assertEqual(result, 'url1')
+
+        imgs._items = [{'id': '1', 'nsfw': True, 'link': 'url1'}]
+        result = imgs.play(msg=None, match=None, bot=None)
+        self.assertEqual(result, 'url1 :nws:')
+
+        # targetted
+
+        imgs._items = [{'id': '1', 'nsfw': False, 'link': 'url1'}]
+        result = imgs.play(msg={'mucnick': 'Tester'}, match=None, bot=None)
+        self.assertEqual(result, 'Tester: url1')
+
+        imgs._items = [{'id': '1', 'nsfw': True, 'link': 'url1'}]
+        result = imgs.play(msg={'mucnick': 'Tester'}, match=None, bot=None)
+        self.assertEqual(result, 'Tester: url1 :nws:')
