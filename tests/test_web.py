@@ -37,7 +37,7 @@ class DummySession(object):
 
     def __init__(self):
         self.history = []
-        
+
     def get(self, target, *a, **kw):
         self.history.append(target)
         idx = 0
@@ -118,3 +118,25 @@ class RandomImgurTestCase(TestCase):
             'https://api.imgur.com/3/gallery/r/ferret/time/2',
         ])
         self.assertEqual(len(imgs._items), 9)
+
+    def test_paging_ranges_initial_only(self):
+        session = DummySession()
+        # yeah page_range is _the_ initial first get, subsequent ones
+        # will just fetch from the first page.
+        imgs = RandomImgur('example_client_id', 'gallery/r/ferret/',
+            page_range=[1, 3],
+            requests_session=session)
+        imgs.refresh()
+        self.assertEqual(session.history, [
+            'https://api.imgur.com/3/gallery/r/ferret/time/1',
+            'https://api.imgur.com/3/gallery/r/ferret/time/2',
+        ])
+        self.assertEqual(len(imgs._items), 6)
+
+        imgs._next_refresh = 0
+        imgs.refresh()
+        # page 0 will be fetched as it's not specified.
+        self.assertEqual(len(imgs._items), 9)
+        self.assertEqual(session.history[-1],
+            'https://api.imgur.com/3/gallery/r/ferret/
+        )
