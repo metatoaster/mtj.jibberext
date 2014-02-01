@@ -138,5 +138,5 @@ class RandomImgurTestCase(TestCase):
         # page 0 will be fetched as it's not specified.
         self.assertEqual(len(imgs._items), 9)
         self.assertEqual(session.history[-1],
-            'https://api.imgur.com/3/gallery/r/ferret/
+            'https://api.imgur.com/3/gallery/r/ferret/',
         )
