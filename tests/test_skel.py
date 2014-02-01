@@ -8,7 +8,8 @@ class PickOneFromSourceTestCase(TestCase):
 
     def test_update_items(self):
         p1 = PickOneFromSource()
-        self.assertRaises(NotImplementedError, p1.update_items)
+        self.assertRaises(NotImplementedError, p1.get_new_items)
+        self.assertRaises(NotImplementedError, p1.update_items, [])
 
     def test_refresh_failure(self):
         p1 = PickOneFromSource()
@@ -21,7 +22,8 @@ class PickOneFromSourceTestCase(TestCase):
     def test_refresh_update(self):
         marker = object()
         p1 = PickOneFromSource()
-        p1.update_items = lambda: marker
+        p1.get_new_items = lambda: marker
+        p1.update_items = lambda x: x
         self.assertTrue(p1.timeout > 0)
         self.assertEqual(p1._next_refresh, 0)
         p1.refresh()

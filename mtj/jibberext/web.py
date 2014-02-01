@@ -34,9 +34,12 @@ class RandomImgur(PickOneFromSource):
             })
         self.requests_session = requests_session
 
-    def update_items(self):
+    def get_new_items(self):
         raw = self.requests_session.get(self.site_root + self.target).json()
         return raw.get(self.root_data_key)
+
+    def update_items(self, items):
+        return items
 
     def play(self, msg=None, match=None, **kw):
         self.refresh()
