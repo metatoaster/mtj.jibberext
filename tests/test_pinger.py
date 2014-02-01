@@ -1,4 +1,5 @@
 import re
+import random
 from unittest import TestCase, skipIf
 
 from mtj.jibberext.pinger import Pinger
@@ -81,6 +82,13 @@ class TestPinger(TestCase):
         self.assertEqual(pinger.get_victim_jids(), [])
 
     # pinging functions
+
+    def test_pick_a_victim(self):
+        pinger = Pinger(msg_ping='hi')
+        msg = {'mucroom': 'room@chat.example.com'}
+        random.seed(0)
+        result = pinger.pick_a_victim(msg, None, bot)
+        self.assertEqual(result, 'userA: hi')
 
     def test_pingall(self):
         pinger = Pinger(msg_ping='hi')

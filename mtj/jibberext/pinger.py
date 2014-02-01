@@ -1,5 +1,6 @@
 import time
 import logging
+import random
 
 from sqlalchemy import create_engine
 from sqlalchemy.sql import func
@@ -189,16 +190,29 @@ class Pinger(Command):
     def _get_roster_nicknames(self, msg, match, bot):
         return self._get_roster(msg, match, bot).keys()
 
-    def ping_all(self, msg, match, bot, nicknames=None, **kw):
-        suffix = ''
+    def _get_msg_to_ping(self, match):
         msg_ping = self.msg_ping
-
         if match:
             replace = match.groupdict().get('replace')
             suffix = match.groupdict().get('suffix', '')
             if replace:
                 msg_ping = replace
+            return msg_ping, suffix
+        else:
+            return msg_ping, ''
 
+    def pick_a_victim(self, msg, match, bot, **kw):
+        msg_ping, suffix = self._get_msg_to_ping(match)
+        if not msg_ping:
+            return
+
+        victim = random.choice(self._get_roster_nicknames(msg, match, bot))
+        result = self._get_msg(msg_ping, msg, match, bot,
+            template=(victim + self.nick_joiner + '%s' + suffix))
+        return result
+
+    def ping_all(self, msg, match, bot, nicknames=None, **kw):
+        msg_ping, suffix = self._get_msg_to_ping(match)
         if not msg_ping:
             return
 
