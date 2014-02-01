@@ -206,7 +206,8 @@ class Pinger(Command):
         if not msg_ping:
             return
 
-        victim = random.choice(self._get_roster_nicknames(msg, match, bot))
+        victim = random.choice(
+            list(self._get_roster_nicknames(msg, match, bot)))
         result = self._get_msg(msg_ping, msg, match, bot,
             template=(victim + self.nick_joiner + '%s' + suffix))
         return result
