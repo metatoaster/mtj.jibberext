@@ -57,13 +57,14 @@ class RandomImgur(PickOneFromSource):
         return results
 
     def update_items(self, items):
-        result = []
+        if self._items is None:
+            self._items = []
+
         for item in items:
             if item['id'] in self._keys:
                 continue
             self._keys.add(item['id'])
-            result.append(item)
-        return result
+            self._items.append(item)
 
     def play(self, msg=None, match=None, **kw):
         self.refresh()

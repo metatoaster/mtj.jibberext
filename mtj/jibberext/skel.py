@@ -33,5 +33,5 @@ class PickOneFromSource(PickOne):
         except:
             logger.exception('error calling refresh')
             return
-        self._items = self.update_items(items)
+        self.update_items(items)
         self._next_refresh = time.time() + self.timeout
