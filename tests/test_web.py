@@ -14,17 +14,36 @@ class DummyResponse(object):
 
 
 class DummySession(object):
-    data = (
-        '{"data":['
+    data = [
+        ('{"data":['
             '{"id":"1","title":"Hello1.","description":null,"link":"url1"},'
             '{"id":"2","title":"Hello2.","description":null,"link":"url2"},'
-            '{"id":"2","title":"Hello3.","description":null,"link":"url3"},'
-            '{"id":"3","title":"Hello4.","description":null,"link":"url4"}'
-        ']}'
-    )
+            '{"id":"3","title":"Hello3.","description":null,"link":"url3"},'
+            '{"id":"4","title":"Hello4.","description":null,"link":"url4"}'
+        ']}'),
+        ('{"data":['
+            '{"id":"4","title":"Hello4.","description":null,"link":"url4"},'
+            '{"id":"5","title":"Hello1.","description":null,"link":"url1"},'
+            '{"id":"6","title":"Hello2.","description":null,"link":"url2"},'
+            '{"id":"7","title":"Hello3.","description":null,"link":"url3"},'
+            '{"id":"8","title":"Hello4.","description":null,"link":"url4"}'
+        ']}'),
+        ('{"data":['
+            '{"id":"7","title":"Hello2.","description":null,"link":"url2"},'
+            '{"id":"8","title":"Hello3.","description":null,"link":"url3"},'
+            '{"id":"9","title":"Hello4.","description":null,"link":"url4"}'
+        ']}'),
+    ]
+
+    def __init__(self):
+        self.history = []
         
     def get(self, target, *a, **kw):
-        return DummyResponse(self.data)
+        self.history.append(target)
+        idx = 0
+        if target[-1] in '012':
+            idx = int(target[-1])
+        return DummyResponse(self.data[idx])
 
 
 class RandomImgurTestCase(TestCase):
@@ -77,3 +96,25 @@ class RandomImgurTestCase(TestCase):
         imgs._items = [{'id': '1', 'nsfw': True, 'link': 'url1'}]
         result = imgs.play(msg={'mucnick': 'Tester'}, match=None, bot=None)
         self.assertEqual(result, 'Tester: url1 :nws:')
+
+    def test_paging_default(self):
+        session = DummySession()
+        imgs = RandomImgur('example_client_id', 'gallery/r/ferret/',
+            requests_session=session)
+        imgs.refresh()
+        self.assertEqual(session.history, [
+            'https://api.imgur.com/3/gallery/r/ferret/',
+        ])
+
+    def test_paging_ranges(self):
+        session = DummySession()
+        imgs = RandomImgur('example_client_id', 'gallery/r/ferret/',
+            page_range=[0, 3],
+            requests_session=session)
+        imgs.refresh()
+        self.assertEqual(session.history, [
+            'https://api.imgur.com/3/gallery/r/ferret/time/0',
+            'https://api.imgur.com/3/gallery/r/ferret/time/1',
+            'https://api.imgur.com/3/gallery/r/ferret/time/2',
+        ])
+        self.assertEqual(len(imgs._items), 9)

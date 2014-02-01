@@ -2,15 +2,19 @@ import time
 import requests
 import random
 
+from mtj.jibber.core import Command
 from mtj.jibberext.skel import PickOneFromSource
 
 
 class RandomImgur(PickOneFromSource):
 
-    def __init__(self, client_id, target,
+    def __init__(self, client_id,
+            target,
             site_root='https://api.imgur.com/3/',
             root_data_key='data',
             requests_session=None,
+            page_key='time/%d',
+            page_range=None,  # (0, 3),
             format_msg='%(title)s - %(link)s',
             format_msg_nsfw=':nsfw: %(title)s - %(link)s :nsfw:',
             format_msg_timer=None,
@@ -22,6 +26,8 @@ class RandomImgur(PickOneFromSource):
         self.target = target
         self.site_root = site_root
         self.root_data_key = root_data_key
+        self.page_key = page_key
+        self.page_range = page_range
         self.format_msg = format_msg
         self.format_msg_timer = format_msg_timer
         self.format_msg_nsfw = format_msg_nsfw or format_msg
@@ -34,12 +40,30 @@ class RandomImgur(PickOneFromSource):
             })
         self.requests_session = requests_session
 
-    def get_new_items(self):
-        raw = self.requests_session.get(self.site_root + self.target).json()
+        self._keys = set()
+
+    def _get_new_items(self, target):
+        raw = self.requests_session.get(target).json()
         return raw.get(self.root_data_key)
 
+    def get_new_items(self):
+        target = self.site_root + self.target
+        if not self.page_range or self._items:
+            return self._get_new_items(target)
+
+        results = []
+        for i in range(*self.page_range):
+            results.extend(self._get_new_items(target + self.page_key % i))
+        return results
+
     def update_items(self, items):
-        return items
+        result = []
+        for item in items:
+            if item['id'] in self._keys:
+                continue
+            self._keys.add(item['id'])
+            result.append(item)
+        return result
 
     def play(self, msg=None, match=None, **kw):
         self.refresh()
