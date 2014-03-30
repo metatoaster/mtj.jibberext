@@ -1,0 +1,14 @@
+Credits
+=======
+
+A few people have found the services of the bots that utilized this
+module to be useful that they found it worthwhile to donate some things
+back as a source of encouragement for building/fixing things in here.
+
+digital charon
+    500M ISK donated after some major improvements were made to the
+    `mtj.jibberext.web.RandomImgur`.
+
+TownSaver
+    350M ISK donated after the `mtj.jibberext.utility.Relay` was added
+    for relaying messages from disused channels to another target.
