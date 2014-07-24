@@ -1,3 +1,4 @@
 requests
 sqlalchemy
+qrcode
 -e git+https://github.com/metatoaster/mtj.jibber.git#egg=mtj.jibber
