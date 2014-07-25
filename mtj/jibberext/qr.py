@@ -4,7 +4,7 @@ from mtj.jibber.core import Command
 
 _template = (
     '<html><body><span style="background:#fff;color:#000;'
-    'font-family:DejaVu Mono,monospace;font-size:xx-small">'
+    'font-family:Courier New,monospace;font-size:xx-small">'
     '<br/>%s</span></body></html>'
 )
 
