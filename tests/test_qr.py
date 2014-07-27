@@ -37,7 +37,7 @@ class CodeTestCase(TestCase):
     def test_render(self):
         patt = re.compile('(?P<code>.*)')
         c = Code(max_length=32, template=u'[%s]', eol=u'EOL\n')
-        self.assertIsNone(
+        self.assertEquals('Input text is too long (max characters: 32).',
             c.render(msg=None, match=patt.search(u'a' * 33), bot=None))
         self.assertIsNone(
             c.render(msg=None, match=patt.search(u''), bot=None))

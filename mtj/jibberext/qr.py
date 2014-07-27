@@ -57,17 +57,24 @@ class Code(Command):
         the next line onto the next line on typical graphical clients.
         Normal newlines will result in a gap which will confuse QR Code
         readers.
+
+    errmsg_too_long
+        Set the desired too long message.
     """
 
-    def __init__(self, max_length=64, template=_template, eol=_eol):
+    def __init__(self, max_length=64, template=_template, eol=_eol,
+            errmsg_too_long='Input text is too long (max characters: {0}).'):
         self.max_length = max_length
         self.template = template
         self.eol = eol
+        self.errmsg_too_long = errmsg_too_long
 
     def render(self, msg=None, match=None, bot=None, **kw):
         code = match.groupdict().get('code', '')
-        if not code or len(code) > self.max_length:
+        if not code:
             return
+        if len(code) > self.max_length:
+            return self.errmsg_too_long.format(self.max_length)
 
         return self.make_code(code)
 
