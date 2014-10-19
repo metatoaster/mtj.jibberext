@@ -30,6 +30,19 @@ class MonitorTestCase(TestCase):
         monitor.listen('msg', 'match', 'bot')
         self.assertEqual(len(monitor.items), 2)
 
+    def test_monitor_listen_raw(self):
+        monitor = Monitor()
+        monitor.listen_raw(msg='msg', match='match', bot='bot')
+        self.assertEqual(monitor.items[0], ((), {
+            'msg': 'msg',
+            'match': 'match',
+            'bot': 'bot',
+        }))
+        monitor.listen_raw('msg', 'a')
+        self.assertEqual(monitor.items[1], (('msg', 'a'), {}))
+        monitor.listen_raw('msg')
+        self.assertEqual(monitor.items[2], (('msg',), {}))
+
 
 class RelayTestCase(TestCase):
 

@@ -14,6 +14,9 @@ class Monitor(Command):
     def listen(self, msg=None, match=None, bot=None, **kw):
         self.items.append(msg)
 
+    def listen_raw(self, *a, **kw):
+        self.items.append((a, kw))
+
 
 class Unping(object):
 
