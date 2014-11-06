@@ -220,7 +220,7 @@ class Pinger(Command):
 
         if not nicknames:
             nicknames = self._get_roster_nicknames(msg, match, bot)
-        nickstr = self.nick_joiner.join(sorted(nicknames))
+        nickstr = self.nick_joiner.join(sorted(nicknames)).replace('%', '%%%%')
         result = self._get_msg(msg_ping, msg, match, bot,
             template=(nickstr + self.nick_joiner + '%s' + suffix))
         return result
