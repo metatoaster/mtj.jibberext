@@ -158,7 +158,8 @@ class Pinger(Command):
             if template:
                 return template % item
         except:
-            logger.error('could not apply result %r into template %r')
+            logger.error('could not apply result %r into template %r',
+                item, template)
         return item
 
     def _get_msg(self, obj, msg, match, bot, template=None):

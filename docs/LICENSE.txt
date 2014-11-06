@@ -1,4 +1,4 @@
-Use of mtj.jibber is governed under the MIT License.
+Use of mtj.jibberext is governed under the MIT License.
 
 The MIT License (MIT)
 
