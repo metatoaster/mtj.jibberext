@@ -93,6 +93,12 @@ class TestPinger(TestCase):
         result = pinger.pick_a_victim(msg, None, bot)
         self.assertTrue(re.match('user[A-E]: hi', result))
 
+    def test_pick_a_victim_no_msg(self):
+        pinger = Pinger(msg_ping=None)
+        msg = {'mucroom': 'room@chat.example.com'}
+        result = pinger.pick_a_victim(msg, None, bot)
+        self.assertIsNone(result)
+
     def test_pingall_format_str(self):
         pinger = Pinger(msg_ping='hi')
         msg = {'mucroom': 'formats@chat.example.com'}

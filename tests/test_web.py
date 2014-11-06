@@ -60,6 +60,14 @@ class RandomImgurTestCase(TestCase):
         imgs.refresh()
         self.assertEqual(len(imgs.items), 4)
 
+    def test_update_items_force_reset(self):
+        session = DummySession()
+        imgs = RandomImgur('example_client_id', 'gallery/r/ferret/',
+            requests_session=session)
+        imgs._items = None
+        imgs.refresh()
+        self.assertEqual(len(imgs.items), 4)
+
     def test_play(self):
         session = DummySession()
         imgs = RandomImgur('example_client_id', 'gallery/r/ferret/',
