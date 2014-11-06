@@ -315,6 +315,10 @@ class Pinger(Command):
             for key, values in self.stanza_admin_conditions:
                 if rosteritem.get(key) in values:
                     return True
+                if ':' in key:
+                    alt_key, attr = key.rsplit(':', 1)
+                    if getattr(rosteritem.get(alt_key), attr, None) in values:
+                        return True
 
             # Step 1.5: if stanza does not satisfy that condition, fall
             # back to jid.

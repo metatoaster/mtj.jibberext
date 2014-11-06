@@ -1,6 +1,7 @@
 import re
 from unittest import TestCase, skipIf
 
+from sleekxmpp.jid import JID
 from mtj.jibberext.pinger import Pinger
 
 
@@ -16,19 +17,23 @@ class FakeBot(object):
 
 bot = FakeBot({
     'room@chat.example.com': {
-        'userA': {'jid': 'usera@example.com'},
-        'userB': {'jid': 'userb@example.com'},
-        'userC': {'jid': 'userc@example.com/fail'},
-        'userD': {'jid': 'userd@example.com/fail', 'role': 'moderator'},
-        'userE': {'jid': 'usere@example.com', 'affiliation': 'owner'},
+        'userA': {'jid': JID('usera@example.com')},
+        'userB': {'jid': JID('userb@example.com')},
+        'userC': {'jid': JID('userc@example.com/fail')},
+        'userD': {'jid': JID('userd@example.com/fail'), 'role': 'moderator'},
+        'userE': {'jid': JID('usere@example.com'), 'affiliation': 'owner'},
     },
     'house@chat.example.com': {
-        'userA': {'jid': 'usera@example.com'},
-        'userC': {'jid': 'userc@example.com/fail'},
-        'userE': {'jid': 'usere@example.com'},
+        'userA': {'jid': JID('usera@example.com')},
+        'userC': {'jid': JID('userc@example.com/fail')},
+        'userE': {'jid': JID('usere@example.com')},
     },
     'kitchen@chat.example.com': {
-        'tester 1': {'jid': 'tester1@example.com/derp'},
+        'tester 1': {'jid': JID('tester1@example.com/derp')},
+    },
+    'formats@chat.example.com': {
+        'somebody': {'jid': JID('tester1@example.com/derp')},
+        'this is 100% trap': {'jid': JID('tester2@example.com/derp')},
     },
 })
 
@@ -103,6 +108,27 @@ class TestPinger(TestCase):
         msg = {'mucroom': 'room@chat.example.com', 'mucnick': 'userB'}
         result = pinger.ping_all_admin_only(msg, None, bot)
         self.assertIsNone(result)
+
+    def test_pingall_admin_only_stanza_condition_custom(self):
+        # this is specifically for JID because it MUST be used with
+        # attributes.
+        pinger = Pinger(msg_ping='hi', stanza_admin_conditions=((
+            ('jid:full', ('userc@example.com/fail',)),
+        )))
+        msg = {'mucroom': 'room@chat.example.com', 'mucnick': 'userC'}
+        result = pinger.ping_all_admin_only(msg, None, bot)
+        self.assertEqual(result, 'userA: userB: userC: userD: userE: hi')
+
+        pinger = Pinger(msg_ping='hi', stanza_admin_conditions=((
+            ('jid:bare', ('userd@example.com',)),
+        )))
+        msg = {'mucroom': 'room@chat.example.com', 'mucnick': 'userB'}
+        result = pinger.ping_all_admin_only(msg, None, bot)
+        self.assertIsNone(result)
+
+        msg = {'mucroom': 'room@chat.example.com', 'mucnick': 'userD'}
+        result = pinger.ping_all_admin_only(msg, None, bot)
+        self.assertEqual(result, 'userA: userB: userC: userD: userE: hi')
 
     def test_pingall_custom_replace(self):
         match = re.search('!ping (?P<replace>.*)', '!ping the custom message')
