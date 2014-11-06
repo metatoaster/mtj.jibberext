@@ -94,6 +94,16 @@ class TestPinger(TestCase):
         result = pinger.ping_all(msg, None, bot)
         self.assertEqual(result, 'userA: userB: userC: userD: userE: hi')
 
+    def test_pingall_admin_only(self):
+        pinger = Pinger(msg_ping='hi')
+        msg = {'mucroom': 'room@chat.example.com', 'mucnick': 'userD'}
+        result = pinger.ping_all_admin_only(msg, None, bot)
+        self.assertEqual(result, 'userA: userB: userC: userD: userE: hi')
+
+        msg = {'mucroom': 'room@chat.example.com', 'mucnick': 'userB'}
+        result = pinger.ping_all_admin_only(msg, None, bot)
+        self.assertIsNone(result)
+
     def test_pingall_custom_replace(self):
         match = re.search('!ping (?P<replace>.*)', '!ping the custom message')
         pinger = Pinger(msg_ping='hi')

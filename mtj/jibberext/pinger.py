@@ -290,6 +290,11 @@ class Pinger(Command):
             return self._get_msg(self.msg_no_victim, msg, match, bot)
         return self.ping_all(msg, match, bot, nicknames=nicknames)
 
+    def ping_all_admin_only(self, msg, match, bot, nicknames=None, **kw):
+        if not self.is_admin(roster=self._get_roster(msg, match, bot), **msg):
+            return
+        return self.ping_all(msg, match, bot, nicknames=nicknames)
+
     def is_admin(self, mucnick=None, jid=None, roster={}, **kw):
         """
         Determine from arguments whether it represents an admin.
