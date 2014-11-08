@@ -13,14 +13,26 @@ provide a diverse set of usable plugins that can be plugged into a bot.
 .. image:: https://coveralls.io/repos/metatoaster/mtj.jibberext/badge.png?branch=master
    :target: https://coveralls.io/r/metatoaster/mtj.jibberext?branch=master
 
-Useful modules requiring somewhat extensive depenencies that are used
-with mtj.jibber are included here.  Currently we have:
+Useful modules requiring somewhat extensive dependencies that are used
+with mtj.jibber are included here to limit the size of that package.
+Also, no dependencies are specified with this package as not all classes
+will be used by the users thus they can specify the required
+dependencies on their installations and/or packages.
 
-- A fortunes package
-- A pinger package
-- An imgur image picker
-- A QR code generator (using Unicode symbols).
-- Assorted untilities.
+Currently we have:
+
+- A fortunes package (requires Python port of `fortune`_)
+- A pinger package (requires `sqlalchemy`_)
+- An imgur image picker (requires `requests`_)
+- A QR code generator (requires `qrcode`_; output uses Unicode symbols)
+- A countdown tool (requires `mtj.f3u1`_)
+- Other assorted utilities.
+
+.. _fortune: https://pypi.python.org/pypi/fortune/1.0
+.. _sqlalchemy: http://www.sqlalchemy.org/
+.. _requests: http://docs.python-requests.org/en/latest/
+.. _qrcode: https://pypi.python.org/pypi/qrcode
+.. _mtj.f3u1: https://pypi.python.org/pypi/mtj.f3u1
 
 Further documentation to come for each of the above, but some classes
 are documented at the source code level, with example configurations
