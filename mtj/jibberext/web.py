@@ -90,6 +90,25 @@ class RandomImgur(PickOneFromSource):
 
 
 class VideoInfo(Command):
+    """
+    Fetches video info.  Currently we do title by default.  Uses the
+    ``youtube_dl`` library for all the information.
+
+    Example configuration that fetches titles from youtube, vimeo and
+    vine links::
+
+        {
+            "package": "mtj.jibberext.web.VideoInfo",
+            "alias": "video_info",
+            "kwargs": {
+            },
+            "commands": [
+                ["(?P<url>http[s]?:\/\/((www.)?youtube.com|youtu.be)\/[\\w\\?=&\\-_]*|vimeo.com\/[0-9]*|vine.co\/v\/[\\w]*)",
+                    "get_video_title"]
+            ]
+        },
+
+    """
 
     def __init__(self):
         if YoutubeDL is None:
@@ -98,6 +117,8 @@ class VideoInfo(Command):
         self.ydl = YoutubeDL()
 
     def extract_info(self, msg, match, bot, **kw):
+        if not match:
+            return {}
         gd = match.groupdict()
         url = gd.get('url')
         if not url:

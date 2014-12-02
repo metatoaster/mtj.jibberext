@@ -205,6 +205,14 @@ class VideoInfoTestCase(TestCase):
         # should test that logging works.
         self.assertTrue(result is None)
 
+    def test_get_regex_matchgroup_missing(self):
+        patt = re.compile(r'(http://youtu.be/[\w=&_]*)')
+        vinf = VideoInfo()
+        result = vinf.get_video_title(msg=None,
+            match=patt.search(''), bot=None)
+        # should test that logging works.
+        self.assertTrue(result is None)
+
     def test_force_missing(self):
         web.YoutubeDL = None
         self.assertRaises(RuntimeError, VideoInfo)
