@@ -1,5 +1,6 @@
 [run]
 omit =
+    */mtj/jibber/*py
     */python?.?/*
     */lib-python/?.?/*.py
     */lib_pypy/*.py

@@ -1,9 +1,18 @@
+import logging
 import time
 import requests
 import random
 
 from mtj.jibber.core import Command
 from mtj.jibberext.skel import PickOneFromSource
+
+logger = logging.getLogger(__name__)
+
+try:
+    from youtube_dl import YoutubeDL
+except ImportError:
+    logger.info('youtube_dl is not available')
+    YoutubeDL = None
 
 
 class RandomImgur(PickOneFromSource):
@@ -78,3 +87,26 @@ class RandomImgur(PickOneFromSource):
             format_msg = (result.get('nsfw') and
                 self.format_msg_timer_nsfw or self.format_msg_timer)
             return format_msg % result
+
+
+class VideoInfo(Command):
+
+    def __init__(self):
+        if YoutubeDL is None:
+            raise RuntimeError('youtube-dl is not available')
+
+        self.ydl = YoutubeDL()
+
+    def extract_info(self, msg, match, bot, **kw):
+        gd = match.groupdict()
+        url = gd.get('url')
+        if not url:
+            if not 'url' in gd:
+                logger.warning('URL match group may be missing in pattern?')
+            return {}
+        info = self.ydl.extract_info(url, download=False)
+        return info
+
+    def get_video_title(self, msg, match, bot, **kw):
+        info = self.extract_info(msg, match, bot, **kw)
+        return info.get('title')

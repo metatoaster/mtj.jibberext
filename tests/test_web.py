@@ -1,8 +1,23 @@
 from unittest import TestCase
+import re
 import time
 import json
 
+from mtj.jibberext import web
 from mtj.jibberext.web import RandomImgur
+from mtj.jibberext.web import VideoInfo
+
+
+class DummyYDL(object):
+
+    def __init__(self, titles):
+        self.titles = titles
+
+    def extract_info(self, url, *a, **kw):
+        return {'title': self.titles.get(url)}
+
+    def __call__(self):
+        return self
 
 
 class DummyResponse(object):
@@ -148,3 +163,48 @@ class RandomImgurTestCase(TestCase):
         self.assertEqual(session.history[-1],
             'https://api.imgur.com/3/gallery/r/ferret/',
         )
+
+
+class VideoInfoTestCase(TestCase):
+
+    def setUp(self):
+        dummy_ydl = DummyYDL(titles={
+            'http://youtu.be/test_video': 'This is a test video',
+        })
+        web.YoutubeDL, self._real_YoutubeDL = dummy_ydl, web.YoutubeDL
+
+    def tearDown(self):
+        web.YoutubeDL = self._real_YoutubeDL
+
+    def test_get_video_title(self):
+        patt = re.compile(r'(?P<url>http://youtu.be/[\w=&_]*)')
+        vinf = VideoInfo()
+        result = vinf.get_video_title(msg=None,
+            match=patt.search('http://youtu.be/test_video'), bot=None)
+        self.assertEqual(result, 'This is a test video')
+
+    def test_get_video_title_fail(self):
+        patt = re.compile(r'(?P<url>http://youtu.be/[\w=&_]*)')
+        vinf = VideoInfo()
+        result = vinf.get_video_title(msg=None,
+            match=patt.search('http://youtu.be/no_video'), bot=None)
+        self.assertTrue(result is None)
+
+    def test_get_video_title_no_match_bad_patt(self):
+        patt = re.compile(r'(?P<url>)')
+        vinf = VideoInfo()
+        result = vinf.get_video_title(msg=None,
+            match=patt.search(''), bot=None)
+        self.assertTrue(result is None)
+
+    def test_get_video_title_no_match_missing_url(self):
+        patt = re.compile(r'(http://youtu.be/[\w=&_]*)')
+        vinf = VideoInfo()
+        result = vinf.get_video_title(msg=None,
+            match=patt.search('http://youtu.be/test_video'), bot=None)
+        # should test that logging works.
+        self.assertTrue(result is None)
+
+    def test_force_missing(self):
+        web.YoutubeDL = None
+        self.assertRaises(RuntimeError, VideoInfo)
