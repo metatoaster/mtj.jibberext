@@ -6,6 +6,7 @@ import json
 from mtj.jibberext import web
 from mtj.jibberext.web import RandomImgur
 from mtj.jibberext.web import VideoInfo
+from mtj.jibberext.web import YoutubeComment
 
 
 class DummyYDL(object):
@@ -21,8 +22,10 @@ class DummyYDL(object):
 
 
 class DummyResponse(object):
-    def __init__(self, raw):
+    def __init__(self, raw, status_code=200):
         self.raw = raw
+        self.content = raw
+        self.status_code = status_code
 
     def json(self):
         return json.loads(self.raw)
@@ -59,6 +62,30 @@ class DummySession(object):
         if target[-1] in '012':
             idx = int(target[-1])
         return DummyResponse(self.data[idx])
+
+
+class DummyYoutubeCommentSession(object):
+    data = {
+        'https://gdata.youtube.com/feeds/api/videos/vid1'
+        '/comments?max-results=50': """<?xml version='1.0' encoding='UTF-8'?>
+<feed xmlns='http://www.w3.org/2005/Atom'>
+        <entry>
+                <title type='text'>Comment title</title>
+                <content type='text'>This is some pointless chatter.</content>
+        </entry>
+        <entry>
+                <title type='text'>Another comment</title>
+                <content type='text'>Some more inane words...</content>
+        </entry>
+</feed>
+    """
+    }
+
+    def get(self, target, *a, **kw):
+        if target in self.data:
+            return DummyResponse(self.data[target])
+        else:
+            return DummyResponse('notxml', status_code=400)
 
 
 class RandomImgurTestCase(TestCase):
@@ -216,3 +243,74 @@ class VideoInfoTestCase(TestCase):
     def test_force_missing(self):
         web.YoutubeDL = None
         self.assertRaises(RuntimeError, VideoInfo)
+
+
+class YoutubeCommentTestCase(TestCase):
+
+    def setUp(self):
+        self.yc = YoutubeComment()
+        self.yc.requests_session = DummyYoutubeCommentSession()
+
+        self.answers = [
+            'This is some pointless chatter.',
+            'Some more inane words...',
+        ]
+
+    def test_faulty_regex_match(self):
+        patt = re.compile(
+            "http[s]?:\/\/(www.)?youtube.com\/"
+            "[^\\s]*v=(?P<video_id>[\\w\\-_]*)")
+
+        result = self.yc.pick_comment(msg=None,
+            match=patt.search('http://www.youtube.com/?watch=vid1'), bot=None)
+
+    def test_get_video_comment(self):
+        patt = re.compile(
+            "http[s]?:\/\/(www.)?youtube.com\/"
+            "[^\\s]*v=(?P<video_id>[\\w\\-_]*)")
+
+        result = self.yc.pick_comment(msg=None,
+            match=patt.search('http://youtube.com/watch?v=vid1'), bot=None)
+        self.assertIn(result, self.answers)
+
+        result = self.yc.pick_comment(msg=None,
+            match=patt.search('https://youtube.com/watch?v=vid1'), bot=None)
+        self.assertIn(result, self.answers)
+
+        result = self.yc.pick_comment(msg=None,
+            match=patt.search('http://www.youtube.com/watch?v=vid1'), bot=None)
+        self.assertIn(result, self.answers)
+
+        result = self.yc.pick_comment(msg=None,
+            match=patt.search('https://www.youtube.com/watch?v=vid1'), bot=None)
+        self.assertIn(result, self.answers)
+
+    def test_get_video_comment_alt(self):
+        patt = re.compile(
+            "http[s]?:\/\/youtu.be\/(?P<video_id>[\\w\\-_]*)")
+
+        result = self.yc.pick_comment(msg=None,
+            match=patt.search('http://youtu.be/vid1'), bot=None)
+        self.assertIn(result, self.answers)
+
+        result = self.yc.pick_comment(msg=None,
+            match=patt.search('https://youtu.be/vid1'), bot=None)
+        self.assertIn(result, self.answers)
+
+    def test_get_video_400(self):
+        patt = re.compile(
+            "http[s]?:\/\/(www.)?youtube.com\/"
+            "[^\\s]*v=(?P<video_id>[\\w\\-_]*)")
+
+        result = self.yc.pick_comment(msg=None,
+            match=patt.search('http://youtube.com/watch?v=vid2'), bot=None)
+        self.assertIsNone(result, self.answers)
+
+    def test_no_match_group(self):
+        patt = re.compile(
+            "http[s]?:\/\/(www.)?youtube.com\/"
+            "[^\\s]*v=(?P<video>[\\w\\-_]*)")
+
+        result = self.yc.pick_comment(msg=None,
+            match=patt.search('http://youtube.com/watch?v=vid1'), bot=None)
+        self.assertIsNone(result, self.answers)

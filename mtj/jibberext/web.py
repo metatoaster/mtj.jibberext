@@ -2,6 +2,7 @@ import logging
 import time
 import requests
 import random
+from xml.etree import ElementTree
 
 from mtj.jibber.core import Command
 from mtj.jibberext.skel import PickOneFromSource
@@ -131,3 +132,61 @@ class VideoInfo(Command):
     def get_video_title(self, msg, match, bot, **kw):
         info = self.extract_info(msg, match, bot, **kw)
         return info.get('title')
+
+
+class YoutubeComment(Command):
+    """
+    Why???
+
+        {
+            "package": "mtj.jibberext.web.YoutubeComment",
+            "alias": "youtube_comment",
+            "kwargs": {
+            },
+            "commands": [
+                ["http[s]?:\/\/(www.)?youtube.com\/[^\\s]*v=(?P<video_id>[\\w\\-_]*)",
+                    "pick_comment"],
+                ["http[s]?:\/\/youtu.be\/(?P<video_id>[\\w\\-_]*)",
+                    "pick_comment"]
+            ]
+        },
+
+    Okay this will pull a random comment from a video link.  I hope you
+    have eye bleach.
+    """
+
+    def __init__(self, max_results=50):
+        self.cache = {}
+        self.max_results = max_results
+        self.requests_session = requests.Session()
+
+    def fetch_comments(self, vid):
+        if vid in self.cache:
+            return self.cache.get(vid)
+
+        r = self.requests_session.get(
+            'https://gdata.youtube.com/feeds/api/videos/'
+            '%s/comments?max-results=%d' % (vid, self.max_results))
+        if r.status_code >= 400:
+            return []
+
+        et = ElementTree.fromstring(r.content)
+
+        self.cache[vid] = [n.text for n in et.findall(
+            './atom:entry/atom:content',
+            {'atom': 'http://www.w3.org/2005/Atom'})
+        ]
+        return self.cache.get(vid)
+
+    def pick_comment(self, msg, match, bot, **kw):
+        if not match:
+            return
+
+        gd = match.groupdict()
+        vid = gd.get('video_id')
+        if not vid:
+            return
+
+        comments = self.fetch_comments(vid)
+        if comments:
+            return random.choice(comments)
