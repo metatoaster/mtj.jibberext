@@ -7,8 +7,13 @@ back as a source of encouragement for building/fixing things in here.
 
 digital charon
     500M ISK donated after some major improvements were made to the
-    `mtj.jibberext.web.RandomImgur`.
+    ``mtj.jibberext.web.RandomImgur``.
 
 TownSaver
-    350M ISK donated after the `mtj.jibberext.utility.Relay` was added
+    350M ISK donated after the ``mtj.jibberext.utility.Relay`` was added
     for relaying messages from disused channels to another target.
+
+Joe D'Trader
+    250M ISK donated after the ``mtj.jibberext.web.VideoInfo`` was added
+    so TEST general chat has YouTube title reporting function returned
+    as the other bot that did it went MIA for quite some time.
