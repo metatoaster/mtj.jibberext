@@ -126,7 +126,7 @@ class VideoInfo(Command):
             if not 'url' in gd:
                 logger.warning('URL match group may be missing in pattern?')
             return {}
-        info = self.ydl.extract_info(url, download=False)
+        info = self.ydl.extract_info(url, download=False, process=False)
         return info
 
     def get_video_title(self, msg, match, bot, **kw):
