@@ -178,6 +178,10 @@ class YoutubeComment(Command):
         ]
         return self.cache.get(vid)
 
+    def _format_comment(self, comment):
+        return comment.replace('\n\n', '\r'
+            ).replace('\n', ' ').replace('\r', '\n\n')
+
     def pick_comment(self, msg, match, bot, **kw):
         if not match:
             return
@@ -189,4 +193,4 @@ class YoutubeComment(Command):
 
         comments = self.fetch_comments(vid)
         if comments:
-            return random.choice(comments)
+            return self._format_comment(random.choice(comments))
