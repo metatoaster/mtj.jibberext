@@ -1,5 +1,6 @@
 requests
 sqlalchemy
 mtj.f3u1
+youtube_dl
 -e git+https://github.com/metatoaster/python-qrcode.git#egg=qrcode
 -e git+https://github.com/metatoaster/mtj.jibber.git#egg=mtj.jibber
