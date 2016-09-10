@@ -15,6 +15,6 @@ class TestFortune(TestCase):
 
     def test_fortune(self):
         f = fortune.Fortune(path('fortunes'))
-        self.assertEqual(len(_fortune._fortunes), 2)
+        self.assertEqual(len(_fortune._fortunes), 3)
         result = f.fortune({'mucnick': 'Tester'}, None)
         self.assertTrue(result.startswith('Tester: Test fortune'))
